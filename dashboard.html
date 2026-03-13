@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LANtern - Network Auditor</title>
+  <!-- Google Fonts: Patrick Hand for headings, Kalam for body -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
+  <link rel="icon" href='data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g stroke="%232c3e50" stroke-width="5" fill="none"><path d="M50,15 C60,5 70,15 50,15"/><path d="M40,25 C40,15 60,15 60,25"/><path d="M35,25 L65,25 L70,35 L30,35 Z" fill="%23ecf0f1"/><path d="M30,35 L25,75 Q25,85 50,85 Q75,85 75,75 L70,35"/><path d="M25,75 L75,75 L70,85 L30,85 Z" fill="%23ecf0f1"/></g><circle cx="50" cy="60" r="12" fill="%23f1c40f"/></svg>'>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      /* Sketchbook Palette */
+      --bg-color: #fdfbf7;
+      --paper-color: #fff;
+      --text-color: #2c3e50;
+      --ink-color: #34495e;
+      
+      /* Marker Colors */
+      --primary-color: #3498db;
+      --primary-hover: #2980b9;
+      --success-color: #2ecc71;
+      --warning-color: #f1c40f;
+      --danger-color: #e74c3c;
+      --ai-color: #5dade2;
+      
+      /* Sketchy Elements */
+      --border-color: #bdc3c7;
+      --shadow-offset: 4px;
+      --shadow-color: rgba(0, 0, 0, 0.15);
+      
+      /* Radius "Wobble" for containers */
+      --radius-wobble: 255px 15px 225px 15px / 15px 225px 15px 255px;
+      --radius-btn: 255px 25px 225px 25px / 25px 225px 25px 255px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    @keyframes flicker {
+      0% { opacity: 0.8; transform: scale(1); }
+      50% { opacity: 1; transform: scale(1.1); }
+      100% { opacity: 0.9; transform: scale(0.95); }
+    }
+    .flame { animation: flicker 0.2s infinite alternate; transform-origin: center; }
+
+    body {
+      font-family: 'Kalam', cursive;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+      /* Subtle paper texture */
+      background-image: radial-gradient(#e0e0e0 1px, transparent 1px);
+      background-size: 20px 20px;
+    }
+
+    h1, h2, h3, h4, h5, h6 {
+      font-family: 'Patrick Hand', cursive;
+      color: var(--ink-color);
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 2rem; display: none; }
+
+    /* Auth Overlay */
+    #auth-overlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: var(--bg-color); 
+        display: flex; align-items: center; justify-content: center; z-index: 2000;
+        background-image: radial-gradient(#e0e0e0 1px, transparent 1px);
+        background-size: 20px 20px;
+    }
+    .auth-card {
+        background: var(--paper-color); 
+        padding: 3rem; 
+        width: 100%; max-width: 450px; text-align: center;
+        border: 2px solid var(--text-color);
+        border-radius: var(--radius-wobble);
+        box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 2px dashed var(--border-color);
+    }
+
+    .logo-area {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+    .logo-area h1 {
+      font-size: 3rem;
+      transform: rotate(-2deg);
+      line-height: 1;
+    }
+    .logo-area span { color: var(--primary-color); font-weight: 300; }
+    
+    .lantern-icon {
+        filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.1));
+        transform: rotate(5deg);
+    }
+
+    /* Dashboard Grid */
+    .executive-dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 2rem;
+      margin-bottom: 3rem;
+    }
+
+    .stat-card {
+      background: var(--paper-color);
+      padding: 1.5rem;
+      border: 2px solid var(--text-color);
+      border-radius: var(--radius-wobble);
+      box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+      transition: transform 0.2s;
+      position: relative;
+    }
+    
+    /* Sticky Tape Effect */
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: -10px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 60px;
+        height: 20px;
+        background: rgba(255, 255, 255, 0.4);
+        border: 1px solid rgba(0,0,0,0.1);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        transform: translateX(-50%) rotate(-2deg);
+    }
+
+    .stat-card:hover { transform: translateY(-3px); }
+
+    .stat-label { 
+        font-family: 'Patrick Hand', cursive; 
+        font-size: 1.1rem; 
+        color: var(--ink-color);
+        border-bottom: 2px solid #eee;
+        padding-bottom: 0.25rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-value { 
+        font-family: 'Patrick Hand', cursive; 
+        font-size: 2.5rem; 
+        color: var(--text-color); 
+    }
+    
+    .stat-desc { font-size: 0.9rem; color: #7f8c8d; }
+
+    /* Marker Bars */
+    .risk-indicator { 
+        height: 12px; 
+        width: 100%; 
+        background: #ecf0f1; 
+        border: 2px solid var(--text-color);
+        border-radius: 10px; 
+        margin-top: 15px; 
+        overflow: hidden; 
+        position: relative;
+    }
+    .risk-fill { 
+        height: 100%; 
+        border-right: 2px solid var(--text-color);
+        opacity: 0.8;
+    }
+
+    /* Controls Area */
+    .controls {
+      background: var(--paper-color);
+      padding: 1.5rem;
+      border: 2px solid var(--text-color);
+      border-radius: var(--radius-wobble);
+      box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+      margin-bottom: 3rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      transform: rotate(1deg);
+    }
+
+    .input-group { display: flex; flex: 1; gap: 1rem; flex-wrap: wrap; }
+    
+    input[type="text"], input[type="password"], select {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.75rem 1rem;
+      border: 2px solid var(--text-color);
+      border-radius: 255px 15px 225px 15px / 15px 225px 15px 255px;
+      font-family: 'Kalam', cursive;
+      font-size: 1.1rem;
+      background: #fff;
+      outline: none;
+    }
+    input:focus { border-color: var(--primary-color); box-shadow: 2px 2px 0 var(--primary-color); }
+
+    /* Sketchy Buttons */
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: 2px solid var(--text-color);
+      border-radius: var(--radius-btn);
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: white;
+      color: var(--text-color);
+      box-shadow: 3px 3px 0 var(--text-color);
+    }
+    .btn:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 5px 5px 0 var(--text-color); }
+    .btn:active:not(:disabled) { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--text-color); }
+    
+    .btn-primary { background: var(--primary-color); color: white; border-color: var(--text-color); }
+    .btn-secondary { background: #ecf0f1; }
+    .btn-ai { background: var(--ai-color); color: white; }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: none; transform: none; }
+
+    .settings-btn {
+      background: none;
+      border: none;
+      font-family: 'Patrick Hand', cursive;
+      font-size: 1.1rem;
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-style: wavy;
+      text-decoration-color: var(--primary-color);
+    }
+
+    /* Hosts Grid */
+    .hosts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+      gap: 2rem;
+    }
+
+    .host-card {
+      background: var(--paper-color);
+      border: 2px solid var(--text-color);
+      border-radius: 10px; /* Straighter for cards */
+      box-shadow: 6px 6px 0 rgba(0,0,0,0.1);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s;
+    }
+    .host-card:hover { transform: rotate(-1deg) scale(1.02); box-shadow: 8px 8px 0 rgba(0,0,0,0.15); }
+
+    .card-header {
+      padding: 1rem 1.5rem;
+      background: #f4f4f4;
+      border-bottom: 2px dashed var(--text-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .host-ip { font-family: 'Patrick Hand', cursive; font-size: 1.5rem; font-weight: bold; }
+    
+    /* Badge as a highlighter mark */
+    .risk-badge {
+        padding: 0.2rem 0.8rem;
+        border-radius: 15px 5px 15px 5px;
+        font-family: 'Patrick Hand', cursive;
+        font-size: 1rem;
+        border: 2px solid var(--text-color);
+        transform: rotate(-2deg);
+    }
+
+    .card-body { padding: 1.5rem; }
+    .info-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 1rem; border-bottom: 1px dotted #ccc; padding-bottom: 2px; }
+    .info-label { color: #7f8c8d; }
+    .info-value { font-weight: 700; }
+
+    /* Tables */
+    .port-table { width: 100%; border-collapse: separate; border-spacing: 0 5px; margin-top: 1rem; }
+    .port-table th { text-align: left; padding: 5px; font-family: 'Patrick Hand', cursive; font-size: 1.1rem; border-bottom: 2px solid var(--text-color); }
+    .port-table td { padding: 8px 5px; background: #fafafa; border-bottom: 1px solid #ddd; }
+    .port-table tr:last-child td { border-bottom: none; }
+
+    .version-tag {
+        display: inline-block;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        background: #eee;
+        border: 1px solid var(--text-color);
+        padding: 2px 6px;
+        border-radius: 4px;
+        transform: rotate(1deg);
+    }
+
+    .tag-new { background: var(--success-color); color: white; border: 1px solid var(--text-color); transform: rotate(-3deg); padding: 0 5px; }
+
+    /* AI Panel - Notebook style */
+    .ai-panel {
+      padding: 1.5rem;
+      background: #fdfae7; /* Yellowish note */
+      border-top: 2px dashed var(--text-color);
+      display: none;
+      position: relative;
+    }
+    .ai-panel::before {
+        content: ''; /* Red margin line */
+        position: absolute;
+        top: 0; bottom: 0; left: 2rem;
+        border-left: 2px solid #ffcccc;
+    }
+    .ai-panel.active { display: block; }
+    .ai-content { 
+        font-size: 1rem; 
+        color: var(--text-color); 
+        padding-left: 1.5rem; /* Space for margin */
+    }
+
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(44, 62, 80, 0.7); z-index: 1000; align-items: center; justify-content: center;
+      backdrop-filter: blur(2px);
+    }
+    .modal-content { 
+        background: var(--paper-color); 
+        padding: 2rem; 
+        border-radius: var(--radius-wobble); 
+        width: 100%; max-width: 500px;
+        border: 3px solid var(--text-color);
+        box-shadow: 10px 10px 0 var(--text-color);
+    }
+
+    #progressContainer {
+      margin-bottom: 2rem; background: var(--paper-color); padding: 1.5rem; 
+      border-radius: var(--radius-wobble); border: 2px solid var(--text-color);
+      box-shadow: var(--shadow-offset) var(--shadow-offset) 0 var(--text-color);
+    }
+    .progress-bar-bg { 
+        background: white; 
+        height: 15px; 
+        border: 2px solid var(--text-color); 
+        border-radius: 10px; 
+        overflow: hidden; 
+        margin-top: 10px; 
+    }
+    .progress-bar-fill { 
+        background: repeating-linear-gradient(
+            45deg,
+            var(--primary-color),
+            var(--primary-color) 10px,
+            #2980b9 10px,
+            #2980b9 20px
+        );
+        height: 100%; width: 0%; transition: width 0.3s; 
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 10px; }
+    ::-webkit-scrollbar-track { background: #f1f1f1; }
+    ::-webkit-scrollbar-thumb { background: #bdc3c7; border: 1px solid var(--text-color); border-radius: 5px; }
+    ::-webkit-scrollbar-thumb:hover { background: #95a5a6; }
+  </style>
+</head>
+<body>
+  <div id="auth-overlay">
+    <div class="auth-card">
+        <h1 style="margin-bottom: 1rem; font-size: 3rem;">LAN<span>tern</span></h1>
+        <p id="auth-desc" style="font-size: 1.1rem; margin-bottom: 2rem;">Confidential Access Only</p>
+        <input type="password" id="auth-password" placeholder="Enter Secret Code..." style="width: 100%; margin-bottom: 1.5rem;">
+        <button class="btn btn-primary" style="width: 100%;" onclick="handleAuth()" id="auth-btn">Unlock Dashboard</button>
+    </div>
+  </div>
+
+  <div class="container" id="main-container">
+    <header>
+      <div class="logo-area">
+        <svg width="60" height="60" viewBox="0 0 100 100" class="lantern-icon">
+            <g stroke="#2c3e50" stroke-width="3" fill="none">
+               <path d="M50,15 C60,5 70,15 50,15" />
+               <path d="M40,25 C40,15 60,15 60,25" />
+               <path d="M35,25 L65,25 L70,35 L30,35 Z" fill="#ecf0f1"/>
+               <path d="M30,35 L25,75 Q25,85 50,85 Q75,85 75,75 L70,35" />
+               <path d="M25,75 L75,75 L70,85 L30,85 Z" fill="#ecf0f1"/>
+            </g>
+            <circle cx="50" cy="60" r="10" fill="#f1c40f" opacity="0.8" class="flame" />
+        </svg>
+        <h1>LAN<span>tern</span></h1>
+      </div>
+      <div style="display: flex; gap: 1.5rem;">
+        <button class="settings-btn" onclick="toggleModal('aiModal')">⚙️ AI Settings</button>
+        <button class="settings-btn" style="color: var(--danger-color); text-decoration-color: var(--danger-color);" onclick="logout()">🔒 Logout</button>
+      </div>
+    </header>
+
+    <!-- Global Executive Dashboard -->
+    <div class="executive-dashboard">
+        <div class="stat-card">
+            <div class="stat-label">Audit Coverage</div>
+            <div class="stat-value" id="stat-coverage">0%</div>
+            <div class="stat-desc" id="stat-coverage-desc">0 of 0 hosts analyzed</div>
+            <div class="risk-indicator">
+                <div id="bar-coverage" class="risk-fill" style="width: 0%; background-color: var(--primary-color);"></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Network Health</div>
+            <div class="stat-value" id="stat-health">100%</div>
+            <div class="stat-desc">Baseline Compliance</div>
+            <div class="risk-indicator">
+                <div id="bar-health" class="risk-fill" style="width: 100%; background-color: var(--success-color);"></div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">Unverified Risks</div>
+            <div class="stat-value" id="stat-risks" style="color: var(--danger-color);">0</div>
+            <div class="stat-desc">Require Attention</div>
+            <div style="font-size: 3rem; position: absolute; right: 20px; bottom: 10px; opacity: 0.1;">⚠</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">System Status</div>
+            <div class="stat-value" id="ai-status-val" style="font-size: 1.5rem; color: var(--danger-color);">● Offline</div>
+            <div class="stat-desc" id="ai-status-desc">AI Engine Disconnected</div>
+        </div>
+    </div>
+
+    <div class="controls">
+      <div class="input-group">
+        <input type="text" id="cidrInput" placeholder="Enter CIDR (e.g., 192.168.1.0/24)">
+        <button class="btn btn-primary" onclick="discoverHosts()">Search Network</button>
+      </div>
+      <button class="btn btn-secondary" onclick="exportToCSV()" id="exportBtn" disabled>Export Report</button>
+    </div>
+
+    <div id="progressContainer" style="display: none;">
+      <div style="display: flex; justify-content: space-between; font-size: 1.1rem; font-weight: 700; font-family: 'Patrick Hand', cursive;">
+        <span id="progressText">Initializing...</span>
+        <span id="progressPercent">0%</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" id="progressBar"></div>
+      </div>
+    </div>
+
+    <div class="hosts-grid" id="hostsGrid"></div>
+  </div>
+
+  <div class="modal" id="aiModal">
+    <div class="modal-content">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="font-weight: 800; font-size: 1.8rem;">AI Settings</h2>
+        <button onclick="toggleModal('aiModal')" style="background:none; border:none; cursor:pointer; font-size: 2rem; color: var(--text-color); font-family: 'Patrick Hand', cursive;">&times;</button>
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <label style="display: block; font-family: 'Patrick Hand', cursive; margin-bottom: 0.5rem; font-size: 1.2rem;">LM Studio Endpoint</label>
+        <input type="text" id="aiBaseUrl" placeholder="http://192.168.1.50:1234/v1" style="width: 100%;">
+      </div>
+      <div style="margin-bottom: 1.5rem;">
+        <label style="display: block; font-family: 'Patrick Hand', cursive; margin-bottom: 0.5rem; font-size: 1.2rem;">Intelligence Model</label>
+        <div style="display: flex; gap: 0.5rem;">
+            <select id="aiModelName" style="flex: 1;"></select>
+            <button class="btn btn-secondary" onclick="fetchModels()" title="Refresh Models">🔄</button>
+        </div>
+        <div id="model-status" style="font-size: 0.9rem; margin-top: 0.5rem; font-weight: 600;"></div>
+      </div>
+      <button class="btn btn-primary" style="width:100%;" onclick="saveAIConfig()">Save Configuration</button>
+    </div>
+  </div>
+
+  <script>
+    console.log("LANtern Script Initialization Started");
+    let discoveredHosts = [];
+    let hostPortData = new Map();
+    let expandedPortPanels = new Set(JSON.parse(localStorage.getItem('expandedPortPanels') || '[]'));
+    let activeScans = new Set(); // Track active scans
+    let authToken = localStorage.getItem('sentinelToken');
+    let isSetupMode = false;
+
+    function saveExpandedPanels() {
+        localStorage.setItem('expandedPortPanels', JSON.stringify([...expandedPortPanels]));
+    }
+    
+    async function authFetch(url, options = {}) {
+        options.headers = options.headers || {};
+        if (authToken) options.headers['X-Sentinel-Token'] = authToken;
+        
+        const resp = await fetch(url, options);
+        if (resp.status === 401) {
+            authToken = null;
+            localStorage.removeItem('sentinelToken');
+            showAuth(true);
+            throw new Error('Unauthorized');
+        }
+        return resp;
+    }
+
+    async function init() {
+        try {
+            const statusResp = await fetch('/api/auth/status');
+            const statusData = await statusResp.json();
+            
+            if (statusData.setup_required) {
+                isSetupMode = true;
+                document.getElementById('auth-desc').textContent = 'Initial Setup: Create an Admin Password.';
+                document.getElementById('auth-btn').textContent = 'Set Password & Unlock';
+                showAuth(true);
+            } else if (!authToken) {
+                showAuth(true);
+            } else {
+                showAuth(false);
+                loadDashboardData();
+            }
+        } catch (e) { showAuth(true); }
+    }
+    init();
+
+    window.showAuth = function(show) {
+        document.getElementById('auth-overlay').style.display = show ? 'flex' : 'none';
+        document.getElementById('main-container').style.display = show ? 'none' : 'block';
+    }
+
+    window.toggleModal = function(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            const current = window.getComputedStyle(modal).display;
+            modal.style.display = current === 'none' ? 'flex' : 'none';
+        }
+    }
+
+    window.handleAuth = async function() {
+        const password = document.getElementById('auth-password').value;
+        const endpoint = isSetupMode ? '/api/auth/setup' : '/api/auth/login';
+        
+        try {
+            const resp = await fetch(endpoint, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ password })
+            });
+            const data = await resp.json();
+            if (resp.ok) {
+                authToken = data.token;
+                localStorage.setItem('sentinelToken', authToken);
+                showAuth(false);
+                loadDashboardData();
+            } else {
+                alert(data.detail || 'Authentication failed');
+            }
+        } catch (e) { alert('Connection error: ' + e.message); }
+    }
+
+    window.logout = async function() {
+        try { await authFetch('/api/auth/logout', { method: 'POST' }); } catch(e) {}
+        authToken = null;
+        localStorage.removeItem('sentinelToken');
+        showAuth(true);
+        location.reload();
+    }
+
+    async function loadDashboardData() {
+        try {
+            expandedPortPanels.clear();
+            const historyResp = await authFetch('/api/scan/history');
+            if (historyResp.ok) {
+                const historyData = await historyResp.json();
+                discoveredHosts = historyData.hosts.map(h => ({
+                    ip: h.ip,
+                    mac: h.mac,
+                    hostname: h.hostname || '',
+                    vendor: h.vendor || 'Unknown'
+                }));
+                discoveredHosts.sort((a, b) => a.ip.localeCompare(b.ip, undefined, { numeric: true }));
+                historyData.hosts.forEach(h => {
+                    hostPortData.set(h.ip, h.last_ports.map(p => ({
+                        ...p,
+                        last_scanned: h.last_scanned
+                    })));
+                });
+                renderHosts();
+                updateGlobalDashboard();
+            }
+
+            const configResp = await authFetch('/api/ai/config');
+            if (configResp.ok) {
+                const config = await configResp.json();
+                document.getElementById('aiBaseUrl').value = config.base_url || '';
+                const modelSelect = document.getElementById('aiModelName');
+                if (config.model_name) {
+                    const opt = document.createElement('option');
+                    opt.value = config.model_name;
+                    opt.textContent = config.model_name;
+                    modelSelect.appendChild(opt);
+                }
+                fetchModels();
+            }
+
+            const cidrResp = await authFetch('/api/config/last_cidr');
+            if (cidrResp.ok) {
+                const data = await cidrResp.json();
+                if (data.cidr) document.getElementById('cidrInput').value = data.cidr;
+            }
+
+            checkAIHealth();
+            setInterval(checkAIHealth, 60000);
+        } catch (e) {}
+    }
+
+    window.saveAIConfig = async function() {
+        const base_url = document.getElementById('aiBaseUrl').value;
+        const model_name = document.getElementById('aiModelName').value;
+        try {
+            await authFetch('/api/ai/config', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ base_url, model_name, enabled: true })
+            });
+            toggleModal('aiModal');
+            checkAIHealth();
+        } catch (e) { alert('Configuration failed: ' + e.message); }
+    }
+
+    window.fetchModels = async function() {
+        const modelSelect = document.getElementById('aiModelName');
+        const statusDiv = document.getElementById('model-status');
+        const baseUrlInput = document.getElementById('aiBaseUrl');
+        const currentModel = modelSelect.value;
+        
+        statusDiv.textContent = 'Updating model list...';
+        statusDiv.style.color = 'var(--primary-color)';
+
+        try {
+            const configResp = await authFetch('/api/ai/config');
+            const currentConfig = await configResp.json();
+            
+            if (baseUrlInput.value && baseUrlInput.value.trim() !== currentConfig.base_url) {
+                await authFetch('/api/ai/config', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ 
+                        base_url: baseUrlInput.value.trim(), 
+                        model_name: currentModel, 
+                        enabled: true 
+                    })
+                });
+            }
+        } catch (e) {
+            console.error("Failed to sync endpoint before fetching models", e);
+        }
+
+        try {
+            const resp = await authFetch('/api/ai/models');
+            if (resp.ok) {
+                const data = await resp.json();
+                modelSelect.innerHTML = '';
+                if (data.models && data.models.length > 0) {
+                    data.models.forEach(m => {
+                        const opt = document.createElement('option');
+                        opt.value = m;
+                        opt.textContent = m;
+                        if (m === currentModel) opt.selected = true;
+                        modelSelect.appendChild(opt);
+                    });
+                    statusDiv.textContent = `✓ ${data.models.length} model(s) loaded.`;
+                    statusDiv.style.color = 'var(--success-color)';
+                } else {
+                    const opt = document.createElement('option');
+                    opt.value = '';
+                    opt.textContent = '-- No Models --';
+                    modelSelect.appendChild(opt);
+                    statusDiv.textContent = '⚠ No models detected.';
+                    statusDiv.style.color = 'var(--danger-color)';
+                }
+            } else {
+                statusDiv.textContent = 'Failed to load models';
+                statusDiv.style.color = 'var(--danger-color)';
+            }
+        } catch (e) {
+            statusDiv.textContent = '⚠ Failed to reach AI Engine';
+            statusDiv.style.color = 'var(--danger-color)';
+        }
+    }
+
+    async function checkAIHealth() {
+        const statusVal = document.getElementById('ai-status-val');
+        const statusDesc = document.getElementById('ai-status-desc');
+        try {
+            const resp = await authFetch('/api/ai/health');
+            if (resp.ok) {
+                const data = await resp.json();
+                if (data.status === 'online') {
+                    statusVal.textContent = '● Online';
+                    statusVal.style.color = 'var(--success-color)';
+                    statusDesc.textContent = data.model ? `Model: ${data.model}` : 'AI Ready';
+                } else {
+                    statusVal.textContent = '● Offline';
+                    statusVal.style.color = 'var(--danger-color)';
+                    statusDesc.textContent = data.error || 'Disconnected';
+                }
+            } else {
+                statusVal.textContent = '● Offline';
+                statusVal.style.color = 'var(--danger-color)';
+                statusDesc.textContent = 'Disconnected';
+            }
+        } catch (e) {
+            statusVal.textContent = '● Offline';
+            statusVal.style.color = 'var(--danger-color)';
+            statusDesc.textContent = 'Disconnected';
+        }
+    }
+
+    function showProgress(show) { document.getElementById('progressContainer').style.display = show ? 'block' : 'none'; }
+
+    window.discoverHosts = async function() {
+        const cidr = document.getElementById('cidrInput').value.trim();
+        if (!cidr) return;
+        showProgress(true);
+        try {
+            const resp = await authFetch('/api/scan/discover', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ cidr })
+            });
+            const data = await resp.json();
+            pollStatus(data.scan_id, 'discovery', cidr);
+        } catch (e) { showProgress(false); }
+    }
+
+    // Helper to generate ports HTML string
+    function generatePortsHTML(ip, ports) {
+        if (!ports || ports.length === 0) return '';
+        
+        let html = '<table class="port-table"><thead><tr><th>Check</th><th>Port</th><th>Service</th></tr></thead><tbody>';
+        ports.forEach(p => {
+            const tag = p.change === 'new' ? '<span class="tag-new">NEW</span>' : '';
+            const version = p.version ? `<div class="version-tag">${p.version}</div>` : '';
+            const checked = p.confirmed_ok ? 'checked' : '';
+            
+            html += `
+            <tr>
+                <td style="width: 40px;"><input type="checkbox" ${checked} onchange="toggleConfirm('${ip}', ${p.port}, '${p.service}', this.checked)"></td>
+                <td style="font-weight: 700;">${p.port}${tag}</td>
+                <td>
+                    <div style="font-weight: 600;">${p.service}</div>
+                    ${version}
+                </td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        return html;
+    }
+
+    // ... (pollStatus - PARTIALLY UPDATED BELOW)
+
+    function updateGlobalDashboard() {
+        const totalHosts = discoveredHosts.length;
+        const scannedHosts = hostPortData.size;
+        const coverage = totalHosts > 0 ? Math.round((scannedHosts / totalHosts) * 100) : 0;
+        
+        let totalUnverifiedRisks = 0;
+        let cumulativeRiskScore = 0;
+        let maxPossibleRisk = 0;
+
+        hostPortData.forEach((ports) => {
+            ports.forEach(p => {
+                if (p.state === 'open') {
+                    const weight = p.risk_weight || 3;
+                    maxPossibleRisk += weight;
+                    if (!p.confirmed_ok) {
+                        totalUnverifiedRisks++;
+                        cumulativeRiskScore += weight;
+                    }
+                }
+            });
+        });
+
+        const health = maxPossibleRisk > 0 ? Math.round(100 - ((cumulativeRiskScore / maxPossibleRisk) * 100)) : 100;
+
+        document.getElementById('stat-coverage').textContent = coverage + '%';
+        document.getElementById('stat-coverage-desc').textContent = `${scannedHosts} of ${totalHosts} analyzed`;
+        document.getElementById('bar-coverage').style.width = coverage + '%';
+
+        document.getElementById('stat-health').textContent = health + '%';
+        const healthBar = document.getElementById('bar-health');
+        healthBar.style.width = health + '%';
+        healthBar.style.backgroundColor = health > 80 ? 'var(--success-color)' : health > 50 ? 'var(--warning-color)' : 'var(--danger-color)';
+
+        document.getElementById('stat-risks').textContent = totalUnverifiedRisks;
+    }
+
+    function calculateHostRisk(ip) {
+        const ports = hostPortData.get(ip);
+        if (!ports) return { score: 0, label: 'Pending', color: '#95a5a6' };
+        
+        let score = 0;
+        ports.forEach(p => {
+            if (p.state === 'open' && !p.confirmed_ok) {
+                score += (p.risk_weight || 3);
+            }
+        });
+
+        if (score === 0) return { score: 0, label: 'Safe', color: 'var(--success-color)' };
+        if (score > 15) return { score: score, label: 'Critical', color: 'var(--danger-color)' };
+        if (score > 7) return { score: score, label: 'High', color: 'var(--warning-color)' };
+        return { score: score, label: 'Medium', color: 'var(--primary-color)' };
+    }
+
+    function renderHosts() {
+        const grid = document.getElementById('hostsGrid');
+        grid.innerHTML = discoveredHosts.map(host => {
+            const risk = calculateHostRisk(host.ip);
+            const ports = hostPortData.get(host.ip) || [];
+            const lastScanned = ports.length > 0 && ports[0].last_scanned 
+                ? new Date(ports[0].last_scanned).toLocaleString() 
+                : 'Never';
+            
+            const rotation = Math.floor(Math.random() * 6) - 3;
+            const isScanning = activeScans.has(host.ip);
+            const isExpanded = expandedPortPanels.has(host.ip);
+            
+            // Pre-generate HTML if expanded, to avoid blanking out during re-renders
+            const portsHTML = isExpanded ? generatePortsHTML(host.ip, ports) : '';
+
+            return `
+            <div class="host-card" id="card-${host.ip.replace(/\./g, '-')}">
+                <div class="card-header">
+                    <div class="host-ip">${host.ip}</div>
+                    <div class="risk-badge" id="risk-badge-${host.ip.replace(/\./g, '-')}" style="border-color: ${risk.color}; color: ${risk.color}; transform: rotate(${rotation}deg);">
+                        ${risk.label}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="info-row"><span class="info-label">Hostname</span><span class="info-value">${host.hostname || 'N/A'}</span></div>
+                    <div class="info-row"><span class="info-label">Vendor</span><span class="info-value">${host.vendor}</span></div>
+                    <div class="info-row"><span class="info-label">MAC</span><span class="info-value">${host.mac}</span></div>
+                    <div class="info-row"><span class="info-label">Scanned</span><span class="info-value">${lastScanned}</span></div>
+                    
+                    <div style="margin-top: 1.5rem; display: flex; gap: 0.8rem;">
+                        <button class="btn btn-secondary" style="flex: 1" onclick="scanPorts('${host.ip}')" ${isScanning ? 'disabled' : ''}>${isScanning ? 'Scanning...' : 'Scan'}</button>
+                        <button class="btn btn-ai" style="flex: 1" id="ai-btn-${host.ip.replace(/\./g, '-')}" onclick="runAIAnalysis('${host.ip}')" ${isScanning ? 'disabled' : ''}>AI Audit</button>
+                    </div>
+
+                    ${hostPortData.has(host.ip) ? `
+                    <div class="port-expand-row" onclick="togglePortPanel('${host.ip}')" style="cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0.5rem; border-top: 2px dashed #ddd; margin-top: 1rem; color: var(--primary-color); font-family: 'Patrick Hand', cursive;">
+                        <span id="expand-arrow-${host.ip.replace(/\./g, '-')}" style="margin-right: 0.25rem;">${isExpanded ? '▲' : '▼'}</span>
+                        <span>${isExpanded ? 'Fold Up' : 'Expand Details'}</span>
+                    </div>
+                    ` : ''}
+
+                    <div id="ports-${host.ip.replace(/\./g, '-')}" style="display: ${isExpanded ? 'block' : 'none'};">${portsHTML}</div>
+                </div>
+                <div class="ai-panel" id="ai-panel-${host.ip.replace(/\./g, '-')}">
+                    <div class="ai-content" id="ai-content-${host.ip.replace(/\./g, '-')}">
+                        <em style="color: #7f8c8d;">Consulting AI...</em>
+                    </div>
+                </div>
+            </div>
+        `}).join('');
+    }
+
+    window.scanPorts = async function(ip) {
+        const id = ip.replace(/\./g, '-');
+        const btn = document.querySelector(`#card-${id} .btn-secondary`);
+        const aiBtn = document.getElementById(`ai-btn-${id}`);
+        const aiPanel = document.getElementById(`ai-panel-${id}`);
+        
+        // Update state
+        activeScans.add(ip);
+        
+        btn.disabled = true; btn.textContent = 'Scanning...';
+        if (aiBtn) { aiBtn.disabled = true; aiBtn.textContent = 'AI Audit'; }
+        if (aiPanel) aiPanel.classList.remove('active');
+
+        try {
+            const resp = await authFetch('/api/scan/ports', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ip })
+            });
+            const data = await resp.json();
+            pollStatus(data.scan_id, 'ports', ip);
+        } catch (e) { 
+            activeScans.delete(ip);
+            btn.disabled = false; 
+            btn.textContent = 'Scan';
+        }
+    }
+
+    window.togglePortPanel = function(ip) {
+        const id = ip.replace(/\./g, '-');
+        const container = document.getElementById(`ports-${id}`);
+        const arrow = document.getElementById(`expand-arrow-${id}`);
+        const textSpan = arrow.nextElementSibling;
+        
+        if (expandedPortPanels.has(ip)) {
+            expandedPortPanels.delete(ip);
+            container.style.display = 'none';
+            arrow.textContent = '▼';
+            textSpan.textContent = 'Expand Details';
+        } else {
+            expandedPortPanels.add(ip);
+            if (!container.innerHTML.trim() && hostPortData.has(ip)) {
+                renderPorts(ip, hostPortData.get(ip), false);
+            }
+            container.style.display = 'block';
+            arrow.textContent = '▲';
+            textSpan.textContent = 'Fold Up';
+        }
+        saveExpandedPanels();
+    }
+
+    function renderPorts(ip, ports, shouldAutoExpand = true) {
+        const id = ip.replace(/\./g, '-');
+        const container = document.getElementById(`ports-${id}`);
+        const aiBtn = document.getElementById(`ai-btn-${id}`);
+        const scanBtn = document.querySelector(`#card-${id} .btn-secondary`);
+        
+        if (shouldAutoExpand) {
+            expandedPortPanels.add(ip);
+            saveExpandedPanels();
+            const expandArrow = document.getElementById(`expand-arrow-${id}`);
+            const textSpan = expandArrow?.nextElementSibling;
+            if (expandArrow) {
+                expandArrow.textContent = '▼';
+                if (textSpan) textSpan.textContent = 'Fold Up';
+            }
+        }
+        
+        // Only re-enable button if scan is NOT active (e.g. historical data load)
+        if (scanBtn && !activeScans.has(ip)) { 
+            scanBtn.disabled = false; 
+            scanBtn.textContent = 'Scan'; 
+        }
+        
+        if (!activeScans.has(ip)) {
+            aiBtn.disabled = false;
+        }
+        
+        const risk = calculateHostRisk(ip);
+        const badge = document.getElementById(`risk-badge-${id}`);
+        if(badge) {
+            badge.textContent = risk.label;
+            badge.style.borderColor = risk.color;
+            badge.style.color = risk.color;
+        }
+
+        container.innerHTML = generatePortsHTML(ip, ports);
+        
+        if (shouldAutoExpand) container.style.display = 'block';
+    }
+
+    // Updated pollStatus to handle activeScans cleanup
+    function pollStatus(scanId, type, identifier) {
+        const interval = setInterval(async () => {
+            try {
+                const resp = await authFetch(`/api/scan/status?scan_id=${scanId}`);
+                const data = await resp.json();
+
+                if (type === 'discovery') {
+                    const prog = data.progress || 0;
+                    document.getElementById('progressBar').style.width = prog + '%';
+                    document.getElementById('progressPercent').textContent = prog + '%';
+                    document.getElementById('progressText').textContent = 'Probing: ' + (data.current_ip || '...');
+                }
+
+                if (data.status === 'completed') {
+                    clearInterval(interval);
+                    if (type === 'discovery') {
+                        discoveredHosts = data.results;
+                        renderHosts();
+                        showProgress(false);
+                        updateGlobalDashboard();
+                        document.getElementById('exportBtn').disabled = false;
+                    } else {
+                        // Scan complete - remove from active set
+                        activeScans.delete(identifier);
+                        hostPortData.set(identifier, data.results);
+                        
+                        // We can call renderHosts to refresh global state, or targeted renderPorts
+                        // renderHosts is safer for global state (risk badges etc) but heavier
+                        // Let's do renderHosts to ensure badges update, and because we fixed the blanking bug
+                        renderHosts(); 
+                        
+                        // Ensure panel opens and data shows (renderHosts might leave it closed if not in expanded set, but we want auto-expand)
+                        // Actually renderHosts respects expandedPortPanels.
+                        // But if it wasn't expanded before, we want to expand it now.
+                        if (!expandedPortPanels.has(identifier)) {
+                            expandedPortPanels.add(identifier);
+                            saveExpandedPanels();
+                            renderHosts(); // Re-render to show expansion
+                        }
+                    }
+                } else if (data.status === 'failed') {
+                    clearInterval(interval);
+                    showProgress(false);
+                    if (type === 'ports') {
+                        activeScans.delete(identifier);
+                        const id = identifier.replace(/\./g, '-');
+                        const btn = document.querySelector(`#card-${id} .btn-secondary`);
+                        if (btn) {
+                            btn.disabled = false;
+                            btn.textContent = 'Scan Failed';
+                            setTimeout(() => { btn.textContent = 'Scan'; }, 3000);
+                        }
+                        alert(`Scan failed: ${data.error || 'Unknown error'}`);
+                    }
+                }
+            } catch (e) { 
+                clearInterval(interval);
+                if (type === 'ports') activeScans.delete(identifier);
+            }
+        }, 1000);
+    }
+
+    window.toggleConfirm = async function(ip, port, service, confirmed) {
+        try {
+            await authFetch('/api/history/confirm', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ ip, port, service, confirmed })
+            });
+            const ports = hostPortData.get(ip);
+            if (ports) {
+                const p = ports.find(x => x.port === port && x.service === service);
+                if (p) p.confirmed_ok = confirmed;
+            }
+            // Update local host risk badge
+            const id = ip.replace(/\./g, '-');
+            const risk = calculateHostRisk(ip);
+            const badge = document.getElementById(`risk-badge-${id}`);
+            if (badge) {
+                badge.textContent = risk.label;
+                badge.style.borderColor = risk.color;
+                badge.style.color = risk.color;
+            }
+            updateGlobalDashboard();
+        } catch (e) {}
+    }
+
+    window.runAIAnalysis = async function(ip) {
+        const id = ip.replace(/\./g, '-');
+        const panel = document.getElementById(`ai-panel-${id}`);
+        const content = document.getElementById(`ai-content-${id}`);
+        const btn = document.getElementById(`ai-btn-${id}`);
+        
+        panel.classList.add('active');
+        btn.disabled = true; btn.textContent = 'Analytic Engine...';
+
+        const hostInfo = discoveredHosts.find(h => h.ip === ip);
+        const hostData = { ...hostInfo, ports: hostPortData.get(ip) || [] };
+
+        try {
+            const resp = await authFetch('/api/ai/analyze', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ host_data: hostData })
+            });
+            const data = await resp.json();
+            try { content.innerHTML = marked.parse(data.analysis); } 
+            catch (e) { content.textContent = data.analysis; }
+            btn.textContent = 'Audit Complete';
+        } catch (e) {
+            content.innerHTML = `<span style="color:red">Engine Error: ${e.message}</span>`;
+            btn.disabled = false; btn.textContent = '🤖 AI Audit';
+        }
+    }
+
+    window.exportToCSV = function() {
+        let csv = 'IP,Hostname,MAC,Vendor\n' + discoveredHosts.map(h => `"${h.ip}","${h.hostname}","${h.mac}","${h.vendor}"`).join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'sentinel_network_report.csv'; a.click();
+    }
+    console.log("LANtern Script Initialization Complete");
+  </script>
+</body>
+</html>
