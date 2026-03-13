@@ -575,10 +575,15 @@
                 }));
                 discoveredHosts.sort((a, b) => a.ip.localeCompare(b.ip, undefined, { numeric: true }));
                 historyData.hosts.forEach(h => {
-                    hostPortData.set(h.ip, h.last_ports.map(p => ({
-                        ...p,
-                        last_scanned: h.last_scanned
-                    })));
+                    const confirmedSet = new Set(h.confirmed || []);
+                    hostPortData.set(h.ip, h.last_ports.map(p => {
+                        const key = `${p.port}/${p.service}`;
+                        return {
+                            ...p,
+                            confirmed_ok: confirmedSet.has(key),
+                            last_scanned: h.last_scanned
+                        };
+                    }));
                 });
                 renderHosts();
                 updateGlobalDashboard();
