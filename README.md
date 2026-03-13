@@ -36,20 +36,7 @@ sudo apt-get install -y nmap python3-venv openssl net-tools
 brew install nmap
 ```
 
-### 2. Transfer Files to Server
-
-**Important:** Do NOT copy the `venv` or `config.json` folders/files! They're specific to your local machine and won't work on the server. Copy only the source files, then create a fresh venv and config on the server.
-
-```bash
-# From your development machine - copy everything EXCEPT venv and config.json
-rsync -avz --exclude 'venv' --exclude 'config.json' /path/to/scanner/ user@your-server:/home/user/scanner/
-
-# Or with scp (delete venv and config.json first):
-# rm -rf /path/to/scanner/venv /path/to/scanner/config.json
-# scp -r /path/to/scanner user@your-server:/home/user/
-```
-
-### 3. Setup Virtual Environment & Install Dependencies
+### 2. Setup Virtual Environment & Install Dependencies
 
 ```bash
 # On the server - create a NEW virtual environment
@@ -62,9 +49,9 @@ python3 -m venv venv
 
 **Note:** The `config.json` file will be created automatically when you first run the scanner. You'll set up your admin password through the web interface.
 
-### 4. Generate SSL Certificates
+### 3. Generate SSL Certificates
 
-The application runs with HTTPS for security. A self-signed certificate is included, or generate a new one:
+The application requires SSL certificates to run with HTTPS. Generate a self-signed certificate (or use your own):
 
 ```bash
 openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -days 365 -nodes -subj "/CN=scanner"
@@ -100,7 +87,7 @@ The app runs on `0.0.0.0:8765` with HTTPS enabled. Access via `https://your-serv
 
 #### Option 2: Systemd Service (Recommended)
 
-Create a service file at `/etc/systemd/system/sentinel-scanner.service`:
+Create a service file at `/etc/systemd/system/lantern.service`:
 
 ```ini
 [Unit]
@@ -123,13 +110,13 @@ Then enable and start:
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable sentinel-scanner
-sudo systemctl start sentinel-scanner
+sudo systemctl enable lantern
+sudo systemctl start lantern
 ```
 
 Check status:
 ```bash
-sudo systemctl status sentinel-scanner
+sudo systemctl status lantern
 ```
 
 ## 🔐 Initial Setup
@@ -187,6 +174,7 @@ Scan history is stored persistently in `scan_history.json`:
 
 ## ⚠️ Security Note
 
-The included SSL certificate is self-signed. For production deployment:
-- Replace with a certificate from a trusted CA (Let's Encrypt, etc.)
-- Or accept the self-signed certificate warning in your browser
+LANtern uses self-signed SSL certificates by default. When accessing the dashboard:
+- Your browser will show a security warning (expected for self-signed certs)
+- For production, replace with a certificate from a trusted CA (Let's Encrypt, etc.)
+- Or proceed past the warning to access the dashboard
