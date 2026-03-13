@@ -1,6 +1,3 @@
-<p align="center">
-  <img src="lanternicon.png">
-</p>
 ![LANtern Screenshot](lantern.png)
 # LANtern - Enterprise Network Auditor
 
