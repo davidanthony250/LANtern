@@ -1,3 +1,4 @@
+![LANtern Screenshot](lantern.png)
 # LANtern - Enterprise Network Auditor
 
 A professional-grade network scanning and security auditing tool. LANtern combines deep Nmap port discovery with real-time risk assessment and AI-powered security analysis.
