@@ -179,3 +179,8 @@ LANtern uses self-signed SSL certificates by default. When accessing the dashboa
 - Your browser will show a security warning (expected for self-signed certs)
 - For production, replace with a certificate from a trusted CA (Let's Encrypt, etc.)
 - Or proceed past the warning to access the dashboard
+
+⚖️ Legal Disclaimer
+LANtern is intended for use on networks you own or have explicit written authorization to scan and audit. Unauthorized scanning of networks or systems you do not own or have permission to access may violate local, state, federal, or international law, including the Computer Fraud and Abuse Act (CFAA) and equivalent legislation in other jurisdictions.
+The authors and contributors of LANtern accept no liability for misuse of this tool or for any damages arising from its use. It is the sole responsibility of the user to ensure compliance with all applicable laws and organizational policies before conducting any network scanning or security assessment activity.
+This tool is provided as-is, without warranty of any kind. Use it responsibly.
