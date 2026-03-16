@@ -481,28 +481,41 @@
             <div class="risk-indicator">
                 <div id="bar-coverage" class="risk-fill" style="width: 0%; background-color: var(--primary-color);"></div>
             </div>
-            <svg id="audit-coverage" class="stat-illustration" viewBox="0 0 120 100"></svg>
+            <svg id="audit-coverage" class="stat-illustration" viewBox="0 0 120 100">
+                <g id="audit-static"></g>
+                <g id="audit-animated"></g>
+            </svg>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="card-health">
             <div class="stat-label">Network Health</div>
             <div class="stat-value" id="stat-health">100%</div>
             <div class="stat-desc">Baseline Compliance</div>
             <div class="risk-indicator">
                 <div id="bar-health" class="risk-fill" style="width: 100%; background-color: var(--success-color);"></div>
             </div>
-            <svg id="network-health" class="stat-illustration" viewBox="0 0 120 100"></svg>
+            <svg id="network-health" class="stat-illustration" viewBox="0 0 120 100">
+                <g id="health-static"></g>
+                <g id="health-animated"></g>
+                <g id="health-drops"></g>
+            </svg>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="card-risks">
             <div class="stat-label">Unverified Risks</div>
             <div class="stat-value" id="stat-risks" style="color: var(--danger-color);">0</div>
             <div class="stat-desc">Require Attention</div>
-            <svg id="unverified-risks" class="stat-illustration lower" viewBox="0 0 120 100"></svg>
+            <svg id="unverified-risks" class="stat-illustration lower" viewBox="0 0 120 100">
+                <g id="risks-static"></g>
+                <g id="risks-animated"></g>
+            </svg>
         </div>
-        <div class="stat-card">
+        <div class="stat-card" id="card-status">
             <div class="stat-label">System Status</div>
             <div class="stat-value" id="ai-status-val" style="font-size: 1.5rem; color: var(--danger-color);">● Offline</div>
             <div class="stat-desc" id="ai-status-desc">AI Engine Disconnected</div>
-            <svg id="system-status" class="stat-illustration lower" viewBox="0 0 120 100"></svg>
+            <svg id="system-status" class="stat-illustration lower" viewBox="0 0 120 100">
+                <g id="status-static"></g>
+                <g id="status-animated"></g>
+            </svg>
         </div>
     </div>
 
@@ -1213,148 +1226,264 @@
       drawStatCardIllustrations();
     }
 
-    // Draw AI Settings Modal Illustration - Robot on Assembly Line
-    function drawModalIllustration() {
+    // Draw AI Settings Modal Illustration - Robot on Assembly Line with stepped animation
+    const ROBOT_X = 175;
+    
+    // Discrete arm poses (y-offsets from rest position)
+    const POSES = [
+      { left: -18, right: 12 },
+      { left: -10, right: 18 },
+      { left:   0, right: 10 },
+      { left:  12, right: -8 },
+      { left:  18, right: -18 },
+      { left:  10, right: -10 },
+      { left:  -2, right:  0 },
+      { left: -12, right:  6 },
+    ];
+    
+    const HOLD_FRAMES = 16;
+    let poseIndex = 0;
+    let holdCount = 0;
+    let modalAnimationId = null;
+    
+    function jitter(amount = 0.0) {
+      return (Math.random() - 0.5) * amount;
+    }
+    
+    function drawModalStatic() {
       const svg = document.getElementById('ai-modal-illustration');
       if (!svg || typeof rough === 'undefined') return;
       
-      // Clear previous drawing
-      svg.innerHTML = '';
+      // Clear and create static group
+      svg.innerHTML = '<g id="modal-static"></g><g id="modal-animated"></g>';
       
-      const rc = rough.svg(svg);
+      const staticGroup = svg.getElementById('modal-static');
+      const rc = rough.svg(staticGroup);
       
       // Conveyor belt
-      svg.appendChild(rc.line(20, 85, 330, 85, { stroke: '#2c3e50', strokeWidth: 3, roughness: 2 }));
+      staticGroup.appendChild(rc.line(20, 85, 330, 85, { stroke: '#2c3e50', strokeWidth: 3, roughness: 2 }));
       
       // Belt rollers
       for (let i = 40; i < 320; i += 40) {
-        svg.appendChild(rc.circle(i, 92, 10, { stroke: '#7f8c8d', strokeWidth: 2, roughness: 1.5, fill: '#95a5a6' }));
+        staticGroup.appendChild(rc.circle(i, 92, 10, { stroke: '#7f8c8d', strokeWidth: 2, roughness: 1.5, fill: '#95a5a6' }));
       }
       
-      // Main robot on belt (centered)
-      const robotX = 175;
-      // Body
-      svg.appendChild(rc.rectangle(robotX - 25, 35, 50, 45, { 
+      // Robot body
+      staticGroup.appendChild(rc.rectangle(ROBOT_X - 25, 35, 50, 45, { 
         stroke: '#2c3e50', strokeWidth: 2.5, roughness: 1.8,
         fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
       }));
       
-      // Head
-      svg.appendChild(rc.rectangle(robotX - 20, 10, 40, 25, { 
+      // Robot head
+      staticGroup.appendChild(rc.rectangle(ROBOT_X - 20, 10, 40, 25, { 
         stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
         fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
       }));
       
       // Eyes
-      svg.appendChild(rc.circle(robotX - 10, 22, 8, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
-      svg.appendChild(rc.circle(robotX + 10, 22, 8, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
-      svg.appendChild(rc.circle(robotX - 10, 22, 3, { fill: '#2c3e50', stroke: 'none' }));
-      svg.appendChild(rc.circle(robotX + 10, 22, 3, { fill: '#2c3e50', stroke: 'none' }));
+      staticGroup.appendChild(rc.circle(ROBOT_X - 10, 22, 8, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
+      staticGroup.appendChild(rc.circle(ROBOT_X + 10, 22, 8, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
+      staticGroup.appendChild(rc.circle(ROBOT_X - 10, 22, 3, { fill: '#2c3e50', stroke: 'none' }));
+      staticGroup.appendChild(rc.circle(ROBOT_X + 10, 22, 3, { fill: '#2c3e50', stroke: 'none' }));
       
       // Antenna
-      svg.appendChild(rc.line(robotX, 10, robotX, 0, { stroke: '#2c3e50', strokeWidth: 2 }));
-      svg.appendChild(rc.circle(robotX, -3, 6, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#e74c3c' }));
+      staticGroup.appendChild(rc.line(ROBOT_X, 10, ROBOT_X, 0, { stroke: '#2c3e50', strokeWidth: 2 }));
+      staticGroup.appendChild(rc.circle(ROBOT_X, -3, 6, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#e74c3c' }));
       
-      // Arms holding boxes
-      svg.appendChild(rc.line(robotX - 25, 50, robotX - 40, 65, { stroke: '#2c3e50', strokeWidth: 3 }));
-      svg.appendChild(rc.line(robotX + 25, 50, robotX + 40, 65, { stroke: '#2c3e50', strokeWidth: 3 }));
-      
-      // Boxes on belt
-      svg.appendChild(rc.rectangle(robotX - 55, 60, 15, 15, { stroke: '#f39c12', strokeWidth: 2, fill: '#f1c40f' }));
-      svg.appendChild(rc.rectangle(robotX + 40, 60, 15, 15, { stroke: '#f39c12', strokeWidth: 2, fill: '#f1c40f' }));
-      
-      // More boxes on belt
-      svg.appendChild(rc.rectangle(80, 65, 20, 20, { stroke: '#27ae60', strokeWidth: 2, fill: '#2ecc71' }));
-      svg.appendChild(rc.rectangle(250, 65, 20, 20, { stroke: '#8e44ad', strokeWidth: 2, fill: '#9b59b6' }));
+      // Background boxes
+      staticGroup.appendChild(rc.rectangle(80, 65, 20, 20, { stroke: '#27ae60', strokeWidth: 2, fill: '#2ecc71' }));
+      staticGroup.appendChild(rc.rectangle(250, 65, 20, 20, { stroke: '#8e44ad', strokeWidth: 2, fill: '#9b59b6' }));
       
       // Background gears
-      svg.appendChild(rc.circle(50, 30, 25, { stroke: '#bdc3c7', strokeWidth: 2, fill: 'none' }));
-      svg.appendChild(rc.circle(300, 30, 25, { stroke: '#bdc3c7', strokeWidth: 2, fill: 'none' }));
+      staticGroup.appendChild(rc.circle(50, 30, 25, { stroke: '#bdc3c7', strokeWidth: 2, fill: 'none' }));
+      staticGroup.appendChild(rc.circle(300, 30, 25, { stroke: '#bdc3c7', strokeWidth: 2, fill: 'none' }));
+    }
+    
+    function animateModalArms() {
+      const svg = document.getElementById('ai-modal-illustration');
+      if (!svg || typeof rough === 'undefined') return;
+      
+      const animatedGroup = svg.getElementById('modal-animated');
+      if (!animatedGroup) return;
+      
+      const rc = rough.svg(animatedGroup);
+      
+      // Advance pose on a hold-frame schedule
+      holdCount++;
+      if (holdCount >= HOLD_FRAMES) {
+        holdCount = 0;
+        poseIndex = (poseIndex + 1) % POSES.length;
+      }
+      
+      const pose = POSES[poseIndex];
+      
+      // Clear previous frame
+      animatedGroup.innerHTML = '';
+      
+      // Left arm + box with jitter
+      const lHandX = ROBOT_X - 40 + jitter();
+      const lHandY = 65 + pose.left + jitter();
+      const lBoxX = ROBOT_X - 55 + jitter(0.8);
+      const lBoxY = 60 + pose.left + jitter(0.8);
+      
+      animatedGroup.appendChild(rc.line(
+        ROBOT_X - 25 + jitter(0.5), 50 + jitter(0.5),
+        lHandX, lHandY,
+        { stroke: '#2c3e50', strokeWidth: 3, roughness: 0.5 }
+      ));
+      animatedGroup.appendChild(rc.rectangle(lBoxX, lBoxY, 15, 15, {
+        stroke: '#f39c12', strokeWidth: 2,
+        fill: '#f1c40f', fillStyle: 'hachure', fillWeight: 1.2,
+        roughness: 0.5
+      }));
+      
+      // Right arm + box with jitter
+      const rHandX = ROBOT_X + 40 + jitter();
+      const rHandY = 65 + pose.right + jitter();
+      const rBoxX = ROBOT_X + 40 + jitter(0.8);
+      const rBoxY = 60 + pose.right + jitter(0.8);
+      
+      animatedGroup.appendChild(rc.line(
+        ROBOT_X + 25 + jitter(0.5), 50 + jitter(0.5),
+        rHandX, rHandY,
+        { stroke: '#2c3e50', strokeWidth: 3, roughness: 0.5 }
+      ));
+      animatedGroup.appendChild(rc.rectangle(rBoxX, rBoxY, 15, 15, {
+        stroke: '#f39c12', strokeWidth: 2,
+        fill: '#f1c40f', fillStyle: 'hachure', fillWeight: 1.2,
+        roughness: 0.5
+      }));
+      
+      modalAnimationId = requestAnimationFrame(animateModalArms);
+    }
+    
+    function drawModalIllustration() {
+      // Draw static background once
+      drawModalStatic();
+      
+      // Reset animation state
+      poseIndex = 0;
+      holdCount = 0;
+      
+      // Cancel any existing animation
+      if (modalAnimationId) {
+        cancelAnimationFrame(modalAnimationId);
+      }
+      
+      // Start animated arms
+      animateModalArms();
+    }
+
+    // Stat Card Animation State
+    const AUDIT_POSES = [
+      { lanternY: 0, armExtend: 0 },
+      { lanternY: -8, armExtend: 2 },
+      { lanternY: -15, armExtend: 4 },
+      { lanternY: -18, armExtend: 5 },
+      { lanternY: -15, armExtend: 4 },
+      { lanternY: -8, armExtend: 2 },
+      { lanternY: 0, armExtend: 0 },
+      { lanternY: 3, armExtend: -1 }
+    ];
+    let auditPoseIndex = 0;
+    let auditHoldCount = 0;
+    let auditAnimationId = null;
+
+    const STATUS_POSES = [
+      { plugX: 0 },
+      { plugX: 6 },
+      { plugX: 10 },
+      { plugX: 12 },
+      { plugX: 10 },
+      { plugX: 6 },
+      { plugX: 0 },
+      { plugX: -3 }
+    ];
+    let statusPoseIndex = 0;
+    let statusHoldCount = 0;
+    let statusAnimationId = null;
+
+    let healthAnimationId = null;
+    let drops = [];
+    let lastDropTime = 0;
+
+    let risksAnimationId = null;
+    let flashToggle = false;
+    let flashCounter = 0;
+
+    function jitter(amount = 0.0) {
+      return (Math.random() - 0.5) * amount;
     }
 
     // Draw Stat Card Illustrations
     function drawStatCardIllustrations() {
-      // Audit Coverage - Robot holding lantern
-      const auditSvg = document.getElementById('audit-coverage');
-      if (auditSvg && typeof rough !== 'undefined') {
-        const rc = rough.svg(auditSvg);
+      // Audit Coverage - Static parts
+      const auditStatic = document.getElementById('audit-static');
+      if (auditStatic && typeof rough !== 'undefined') {
+        const rc = rough.svg(auditStatic);
         
         // Robot body
-        auditSvg.appendChild(rc.rectangle(35, 40, 50, 55, { 
+        auditStatic.appendChild(rc.rectangle(35, 40, 50, 55, { 
           stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
           fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
         }));
         
         // Robot head
-        auditSvg.appendChild(rc.rectangle(40, 15, 40, 28, { 
+        auditStatic.appendChild(rc.rectangle(40, 15, 40, 28, { 
           stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
           fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
         }));
         
         // Eyes
-        auditSvg.appendChild(rc.circle(52, 28, 7, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
-        auditSvg.appendChild(rc.circle(68, 28, 7, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
-        auditSvg.appendChild(rc.circle(52, 28, 3, { fill: '#2c3e50', stroke: 'none' }));
-        auditSvg.appendChild(rc.circle(68, 28, 3, { fill: '#2c3e50', stroke: 'none' }));
+        auditStatic.appendChild(rc.circle(52, 28, 7, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
+        auditStatic.appendChild(rc.circle(68, 28, 7, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
+        auditStatic.appendChild(rc.circle(52, 28, 3, { fill: '#2c3e50', stroke: 'none' }));
+        auditStatic.appendChild(rc.circle(68, 28, 3, { fill: '#2c3e50', stroke: 'none' }));
         
         // Antenna
-        auditSvg.appendChild(rc.line(60, 15, 60, 5, { stroke: '#2c3e50', strokeWidth: 2 }));
-        auditSvg.appendChild(rc.circle(60, 2, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#f1c40f' }));
+        auditStatic.appendChild(rc.line(60, 15, 60, 5, { stroke: '#2c3e50', strokeWidth: 2 }));
+        auditStatic.appendChild(rc.circle(60, 2, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#f1c40f' }));
         
-        // Lantern
-        const lanternX = 110;
-        const lanternY = 35;
-        
-        // Handle (triangle at top)
-        auditSvg.appendChild(rc.curve([[lanternX - 5, lanternY], [lanternX, lanternY - 6], [lanternX + 5, lanternY]], { stroke: '#2c3e50', strokeWidth: 2 }));
-        auditSvg.appendChild(rc.line(lanternX - 10, lanternY + 2, lanternX + 10, lanternY + 2, { stroke: '#2c3e50', strokeWidth: 2 }));
-        auditSvg.appendChild(rc.rectangle(lanternX - 8, lanternY + 4, 16, 22, { 
-          stroke: '#2c3e50', strokeWidth: 1.5, fill: 'none'
-        }));
-        auditSvg.appendChild(rc.circle(lanternX, lanternY + 15, 6, { fill: '#f1c40f', stroke: 'none' }));
-        auditSvg.appendChild(rc.circle(lanternX, lanternY + 15, 9, { stroke: '#f39c12', strokeWidth: 1, fill: 'none' }));
-        auditSvg.appendChild(rc.line(lanternX - 10, lanternY + 26, lanternX + 10, lanternY + 26, { stroke: '#2c3e50', strokeWidth: 2 }));
-        
-        // Robot hand touching the handle
-        auditSvg.appendChild(rc.line(85, 55, lanternX, lanternY - 6, { stroke: '#2c3e50', strokeWidth: 2.5 }));
+        // Draw initial lantern
+        drawAuditLanternStatic();
       }
 
-      // Network Health - Medic Robot with syringe
-      const healthSvg = document.getElementById('network-health');
-      if (healthSvg && typeof rough !== 'undefined') {
-        const rc = rough.svg(healthSvg);
+      // Network Health - Static parts
+      const healthStatic = document.getElementById('health-static');
+      if (healthStatic && typeof rough !== 'undefined') {
+        const rc = rough.svg(healthStatic);
         
         // Robot body
-        healthSvg.appendChild(rc.rectangle(35, 45, 50, 50, { 
+        healthStatic.appendChild(rc.rectangle(35, 45, 50, 50, { 
           stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
           fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
         }));
         
         // White medic cross on body
-        healthSvg.appendChild(rc.line(55, 67, 65, 67, { stroke: 'white', strokeWidth: 4 }));
-        healthSvg.appendChild(rc.line(60, 62, 60, 72, { stroke: 'white', strokeWidth: 4 }));
+        healthStatic.appendChild(rc.line(55, 67, 65, 67, { stroke: 'white', strokeWidth: 4 }));
+        healthStatic.appendChild(rc.line(60, 62, 60, 72, { stroke: 'white', strokeWidth: 4 }));
         
         // Robot head
-        healthSvg.appendChild(rc.rectangle(40, 10, 40, 30, { 
+        healthStatic.appendChild(rc.rectangle(40, 10, 40, 30, { 
           stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
           fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
         }));
         
         // Eyes
-        healthSvg.appendChild(rc.circle(52, 25, 7, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#2ecc71' }));
-        healthSvg.appendChild(rc.circle(68, 25, 7, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#2ecc71' }));
+        healthStatic.appendChild(rc.circle(52, 25, 7, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#2ecc71' }));
+        healthStatic.appendChild(rc.circle(68, 25, 7, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#2ecc71' }));
         
         // Medic cap on forehead
-        healthSvg.appendChild(rc.rectangle(38, 13, 44, 10, { 
+        healthStatic.appendChild(rc.rectangle(38, 13, 44, 10, { 
           stroke: '#2c3e50', strokeWidth: 2, fill: 'white', fillStyle: 'solid'
         }));
-        healthSvg.appendChild(rc.line(55, 16, 65, 16, { stroke: '#e74c3c', strokeWidth: 3 }));
-        healthSvg.appendChild(rc.line(60, 11, 60, 21, { stroke: '#e74c3c', strokeWidth: 3 }));
+        healthStatic.appendChild(rc.line(55, 16, 65, 16, { stroke: '#e74c3c', strokeWidth: 3 }));
+        healthStatic.appendChild(rc.line(60, 11, 60, 21, { stroke: '#e74c3c', strokeWidth: 3 }));
         
         // Arm going up at angle to hold syringe
         const shoulderX = 35, shoulderY = 50;
         const handX = 22, handY = 38;
-        healthSvg.appendChild(rc.line(shoulderX, shoulderY, handX, handY, { stroke: '#2c3e50', strokeWidth: 3 }));
+        healthStatic.appendChild(rc.line(shoulderX, shoulderY, handX, handY, { stroke: '#2c3e50', strokeWidth: 3 }));
         
         // Calculate arm angle
         const dx = handX - shoulderX;
@@ -1367,41 +1496,40 @@
         const perpCos = -sin;
         const perpSin = cos;
         
-        // T-handle (perpendicular to arm) at hand position
+        // T-handle (perpendicular to arm)
         const tLength = 7;
-        healthSvg.appendChild(rc.line(
+        healthStatic.appendChild(rc.line(
           handX - tLength * perpCos, handY - tLength * perpSin,
           handX + tLength * perpCos, handY + tLength * perpSin,
           { stroke: '#2c3e50', strokeWidth: 3 }
         ));
         
-        // Plunger rod extending along arm angle
+        // Plunger rod
         const rodLen = 5;
         const bodyStartX = handX + rodLen * cos;
         const bodyStartY = handY + rodLen * sin;
-        healthSvg.appendChild(rc.line(handX, handY, bodyStartX, bodyStartY, { stroke: '#2c3e50', strokeWidth: 2 }));
+        healthStatic.appendChild(rc.line(handX, handY, bodyStartX, bodyStartY, { stroke: '#2c3e50', strokeWidth: 2 }));
         
-        // Syringe body - extending along same angle as arm
+        // Syringe body
         const bodyLen = 22;
         const bodyWidth = 5;
         const endX = bodyStartX + bodyLen * cos;
         const endY = bodyStartY + bodyLen * sin;
         
-        // Draw body as rectangle using perpendicular offset
-        healthSvg.appendChild(rc.line(bodyStartX - bodyWidth * perpCos, bodyStartY - bodyWidth * perpSin,
+        healthStatic.appendChild(rc.line(bodyStartX - bodyWidth * perpCos, bodyStartY - bodyWidth * perpSin,
                                 bodyStartX + bodyWidth * perpCos, bodyStartY + bodyWidth * perpSin,
                                 { stroke: '#2c3e50', strokeWidth: 2 }));
-        healthSvg.appendChild(rc.line(bodyStartX + bodyWidth * perpCos, bodyStartY + bodyWidth * perpSin,
+        healthStatic.appendChild(rc.line(bodyStartX + bodyWidth * perpCos, bodyStartY + bodyWidth * perpSin,
                                 endX + bodyWidth * perpCos, endY + bodyWidth * perpSin,
                                 { stroke: '#2c3e50', strokeWidth: 2 }));
-        healthSvg.appendChild(rc.line(endX + bodyWidth * perpCos, endY + bodyWidth * perpSin,
+        healthStatic.appendChild(rc.line(endX + bodyWidth * perpCos, endY + bodyWidth * perpSin,
                                 endX - bodyWidth * perpCos, endY - bodyWidth * perpSin,
                                 { stroke: '#2c3e50', strokeWidth: 2 }));
-        healthSvg.appendChild(rc.line(endX - bodyWidth * perpCos, endY - bodyWidth * perpSin,
+        healthStatic.appendChild(rc.line(endX - bodyWidth * perpCos, endY - bodyWidth * perpSin,
                                 bodyStartX - bodyWidth * perpCos, bodyStartY - bodyWidth * perpSin,
                                 { stroke: '#2c3e50', strokeWidth: 2 }));
         
-        // Red liquid inside
+        // Red liquid
         const liquidLen = 16;
         const liquidEndX = bodyStartX + liquidLen * cos;
         const liquidEndY = bodyStartY + liquidLen * sin;
@@ -1413,119 +1541,397 @@
           [liquidEndX + liquidWidth * perpCos, liquidEndY + liquidWidth * perpSin],
           [liquidEndX - liquidWidth * perpCos, liquidEndY - liquidWidth * perpSin]
         ];
-        healthSvg.appendChild(rc.polygon(liquidPoints, { stroke: 'none', fill: '#e74c3c', fillStyle: 'solid' }));
+        healthStatic.appendChild(rc.polygon(liquidPoints, { stroke: 'none', fill: '#e74c3c', fillStyle: 'solid' }));
         
         // Needle at end
         const needleLen = 5;
         const needleEndX = endX + needleLen * cos;
         const needleEndY = endY + needleLen * sin;
-        healthSvg.appendChild(rc.line(endX, endY, needleEndX, needleEndY, { stroke: '#2c3e50', strokeWidth: 2 }));
+        healthStatic.appendChild(rc.line(endX, endY, needleEndX, needleEndY, { stroke: '#2c3e50', strokeWidth: 2 }));
       }
 
-      // Unverified Risks - Robot with clipboard and warning triangle diagonal
-      const risksSvg = document.getElementById('unverified-risks');
-      if (risksSvg && typeof rough !== 'undefined') {
-        const rc = rough.svg(risksSvg);
+      // Unverified Risks - Static parts
+      const risksStatic = document.getElementById('risks-static');
+      if (risksStatic && typeof rough !== 'undefined') {
+        const rc = rough.svg(risksStatic);
         
         // Robot body
-        risksSvg.appendChild(rc.rectangle(10, 45, 40, 45, { 
+        risksStatic.appendChild(rc.rectangle(10, 45, 40, 45, { 
           stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
           fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
         }));
         
         // Robot head
-        risksSvg.appendChild(rc.rectangle(13, 20, 34, 26, { 
+        risksStatic.appendChild(rc.rectangle(13, 20, 34, 26, { 
           stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
           fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
         }));
         
-        // V-shaped TV antenna on head
-        const headCenterX = 30;
-        const headTopY = 20;
-        risksSvg.appendChild(rc.line(headCenterX, headTopY, headCenterX - 10, headTopY - 12, { stroke: '#2c3e50', strokeWidth: 2 }));
-        risksSvg.appendChild(rc.line(headCenterX, headTopY, headCenterX + 10, headTopY - 12, { stroke: '#2c3e50', strokeWidth: 2 }));
+        // V-shaped TV antenna
+        risksStatic.appendChild(rc.line(30, 20, 20, 8, { stroke: '#2c3e50', strokeWidth: 2 }));
+        risksStatic.appendChild(rc.line(30, 20, 40, 8, { stroke: '#2c3e50', strokeWidth: 2 }));
         
-        // Eyes - concerned look
-        risksSvg.appendChild(rc.circle(22, 32, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
-        risksSvg.appendChild(rc.circle(38, 32, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
-        risksSvg.appendChild(rc.circle(22, 32, 2, { fill: '#2c3e50', stroke: 'none' }));
-        risksSvg.appendChild(rc.circle(38, 32, 2, { fill: '#2c3e50', stroke: 'none' }));
+        // Eyes
+        risksStatic.appendChild(rc.circle(22, 32, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
+        risksStatic.appendChild(rc.circle(38, 32, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
+        risksStatic.appendChild(rc.circle(22, 32, 2, { fill: '#2c3e50', stroke: 'none' }));
+        risksStatic.appendChild(rc.circle(38, 32, 2, { fill: '#2c3e50', stroke: 'none' }));
         
-        // Eyebrows - worried
-        risksSvg.appendChild(rc.line(18, 25, 26, 27, { stroke: '#2c3e50', strokeWidth: 2 }));
-        risksSvg.appendChild(rc.line(34, 27, 42, 25, { stroke: '#2c3e50', strokeWidth: 2 }));
+        // Eyebrows
+        risksStatic.appendChild(rc.line(18, 25, 26, 27, { stroke: '#2c3e50', strokeWidth: 2 }));
+        risksStatic.appendChild(rc.line(34, 27, 42, 25, { stroke: '#2c3e50', strokeWidth: 2 }));
         
         // Clipboard
-        risksSvg.appendChild(rc.rectangle(55, 50, 30, 40, { 
+        risksStatic.appendChild(rc.rectangle(55, 50, 30, 40, { 
           stroke: '#2c3e50', strokeWidth: 2, fill: 'white', fillStyle: 'solid'
         }));
-        risksSvg.appendChild(rc.rectangle(62, 45, 16, 8, { 
+        risksStatic.appendChild(rc.rectangle(62, 45, 16, 8, { 
           stroke: '#2c3e50', strokeWidth: 2, fill: '#95a5a6'
         }));
-        risksSvg.appendChild(rc.line(60, 60, 80, 60, { stroke: '#bdc3c7', strokeWidth: 1.5 }));
-        risksSvg.appendChild(rc.line(60, 70, 80, 70, { stroke: '#bdc3c7', strokeWidth: 1.5 }));
-        risksSvg.appendChild(rc.line(60, 80, 75, 80, { stroke: '#bdc3c7', strokeWidth: 1.5 }));
+        risksStatic.appendChild(rc.line(60, 60, 80, 60, { stroke: '#bdc3c7', strokeWidth: 1.5 }));
+        risksStatic.appendChild(rc.line(60, 70, 80, 70, { stroke: '#bdc3c7', strokeWidth: 1.5 }));
+        risksStatic.appendChild(rc.line(60, 80, 75, 80, { stroke: '#bdc3c7', strokeWidth: 1.5 }));
         
-        // Warning triangle - diagonal above and to the right, no bubble
-        const triX = 85;
-        const triY = 15;
-        risksSvg.appendChild(rc.polygon([
-          [triX, triY - 12], [triX + 18, triY + 18], [triX - 18, triY + 18]
-        ], { 
-          stroke: '#e74c3c', strokeWidth: 3, fill: '#f1c40f'
-        }));
-        // Exclamation mark inside triangle
-        risksSvg.appendChild(rc.line(triX, triY - 2, triX, triY + 10, { stroke: '#2c3e50', strokeWidth: 4 }));
-        risksSvg.appendChild(rc.circle(triX, triY + 14, 3, { fill: '#2c3e50', stroke: 'none' }));
+        // Draw initial triangle
+        drawRisksTriangleStatic();
       }
 
-      // System Status - Robot holding power plug
-      const statusSvg = document.getElementById('system-status');
-      if (statusSvg && typeof rough !== 'undefined') {
-        const rc = rough.svg(statusSvg);
+      // System Status - Static parts
+      const statusStatic = document.getElementById('status-static');
+      if (statusStatic && typeof rough !== 'undefined') {
+        const rc = rough.svg(statusStatic);
         
         // Robot body
-        statusSvg.appendChild(rc.rectangle(15, 35, 40, 50, { 
+        statusStatic.appendChild(rc.rectangle(15, 35, 40, 50, { 
           stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
           fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
         }));
         
         // Robot head
-        statusSvg.appendChild(rc.rectangle(20, 12, 30, 25, { 
+        statusStatic.appendChild(rc.rectangle(20, 12, 30, 25, { 
           stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
           fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
         }));
         
-        // Eyes - focused
-        statusSvg.appendChild(rc.circle(28, 24, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#3498db' }));
-        statusSvg.appendChild(rc.circle(42, 24, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#3498db' }));
+        // Eyes
+        statusStatic.appendChild(rc.circle(28, 24, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#3498db' }));
+        statusStatic.appendChild(rc.circle(42, 24, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#3498db' }));
         
         // Antenna
-        statusSvg.appendChild(rc.line(35, 12, 35, 3, { stroke: '#2c3e50', strokeWidth: 2 }));
-        statusSvg.appendChild(rc.circle(35, 0, 4, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#2ecc71' }));
+        statusStatic.appendChild(rc.line(35, 12, 35, 3, { stroke: '#2c3e50', strokeWidth: 2 }));
+        statusStatic.appendChild(rc.circle(35, 0, 4, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#2ecc71' }));
         
-        // Arm holding plug
-        statusSvg.appendChild(rc.line(55, 50, 70, 58, { stroke: '#2c3e50', strokeWidth: 2.5 }));
-        
-        // Power plug body - wider than tall
-        statusSvg.appendChild(rc.rectangle(68, 50, 28, 20, { 
-          stroke: '#2c3e50', strokeWidth: 2, roughness: 1.5,
-          fill: '#f39c12', fillStyle: 'solid'
-        }));
-        
-        // Two horizontal prongs extending from the right side of plug body
-        statusSvg.appendChild(rc.rectangle(96, 54, 12, 5, { 
-          stroke: '#2c3e50', strokeWidth: 1.5, fill: 'none'
-        }));
-        statusSvg.appendChild(rc.rectangle(96, 63, 12, 5, { 
-          stroke: '#2c3e50', strokeWidth: 1.5, fill: 'none'
-        }));
-        
-        // Single yellow cord
-        statusSvg.appendChild(rc.line(68, 60, 15, 92, { 
-          stroke: '#f1c40f', strokeWidth: 4, roughness: 1.5, bowing: 2
-        }));
+        // Draw initial plug
+        drawStatusPlugStatic();
       }
+      
+      // Set up hover events
+      setupStatCardAnimations();
+    }
+    
+    // Initial draw functions for animated elements
+    function drawAuditLanternStatic() {
+      const svg = document.getElementById('audit-animated');
+      if (!svg || typeof rough === 'undefined') return;
+      const rc = rough.svg(svg);
+      
+      const lanternX = 110;
+      const lanternY = 35;
+      
+      // Arm
+      svg.appendChild(rc.line(85, 55, 105, 50, { stroke: '#2c3e50', strokeWidth: 2.5, roughness: 0.5 }));
+      
+      // Lantern
+      svg.appendChild(rc.curve([[lanternX - 5, lanternY], [lanternX, lanternY - 6], [lanternX + 5, lanternY]], { stroke: '#2c3e50', strokeWidth: 2, roughness: 0.5 }));
+      svg.appendChild(rc.line(lanternX - 10, lanternY + 2, lanternX + 10, lanternY + 2, { stroke: '#2c3e50', strokeWidth: 2, roughness: 0.5 }));
+      svg.appendChild(rc.rectangle(lanternX - 8, lanternY + 4, 16, 22, { 
+        stroke: '#2c3e50', strokeWidth: 1.5, fill: 'none', roughness: 0.5
+      }));
+      svg.appendChild(rc.circle(lanternX, lanternY + 15, 6, { fill: '#f1c40f', stroke: 'none' }));
+      svg.appendChild(rc.circle(lanternX, lanternY + 15, 9, { stroke: '#f39c12', strokeWidth: 1, fill: 'none', roughness: 0.5 }));
+      svg.appendChild(rc.line(lanternX - 10, lanternY + 26, lanternX + 10, lanternY + 26, { stroke: '#2c3e50', strokeWidth: 2, roughness: 0.5 }));
+    }
+    
+    function drawRisksTriangleStatic() {
+      const svg = document.getElementById('risks-animated');
+      if (!svg || typeof rough === 'undefined') return;
+      const rc = rough.svg(svg);
+      
+      const triX = 85;
+      const triY = 22;
+      const currentSize = 12;
+      
+      svg.appendChild(rc.polygon([
+        [triX, triY - currentSize], 
+        [triX + currentSize + 3, triY + currentSize], 
+        [triX - currentSize - 3, triY + currentSize]
+      ], { 
+        stroke: '#e74c3c', strokeWidth: 3, fill: '#f1c40f'
+      }));
+      
+      svg.appendChild(rc.line(triX, triY - 5, triX, triY + 5, { stroke: '#2c3e50', strokeWidth: 4 }));
+      svg.appendChild(rc.circle(triX, triY + 9, 3, { fill: '#2c3e50', stroke: 'none' }));
+    }
+    
+    function drawStatusPlugStatic() {
+      const svg = document.getElementById('status-animated');
+      if (!svg || typeof rough === 'undefined') return;
+      const rc = rough.svg(svg);
+      
+      const plugX = 68;
+      
+      // Yellow cord
+      svg.appendChild(rc.curve([[15, 92], [40, 75], [plugX, 60]], { 
+        stroke: '#f1c40f', strokeWidth: 4, roughness: 0.5, bowing: 1
+      }));
+      
+      // Arm
+      const handX = plugX;
+      const armX = 55 + (handX - 55) * 0.5;
+      svg.appendChild(rc.line(55, 50, armX, 58, { stroke: '#2c3e50', strokeWidth: 2.5, roughness: 0.3 }));
+      svg.appendChild(rc.line(armX, 58, handX, 58, { stroke: '#2c3e50', strokeWidth: 2.5, roughness: 0.3 }));
+      
+      // Power plug body
+      svg.appendChild(rc.rectangle(plugX, 50, 28, 20, { 
+        stroke: '#2c3e50', strokeWidth: 2, roughness: 0.5,
+        fill: '#f39c12', fillStyle: 'solid'
+      }));
+      
+      // Prongs
+      svg.appendChild(rc.rectangle(plugX + 28, 54, 12, 5, { 
+        stroke: '#2c3e50', strokeWidth: 1.5, fill: 'none', roughness: 0.5
+      }));
+      svg.appendChild(rc.rectangle(plugX + 28, 63, 12, 5, { 
+        stroke: '#2c3e50', strokeWidth: 1.5, fill: 'none', roughness: 0.5
+      }));
+    }
+
+    // Animation functions
+    function animateAuditLantern() {
+      const svg = document.getElementById('audit-animated');
+      if (!svg || typeof rough === 'undefined') return;
+      const rc = rough.svg(svg);
+      
+      auditHoldCount++;
+      if (auditHoldCount >= 12) {
+        auditHoldCount = 0;
+        auditPoseIndex = (auditPoseIndex + 1) % AUDIT_POSES.length;
+      }
+      
+      const pose = AUDIT_POSES[auditPoseIndex];
+      const lanternY = 35 + pose.lanternY;
+      const lanternX = 110;
+      const armExtend = pose.armExtend;
+      
+      const handX = lanternX;
+      const handY = lanternY - 6;
+      const shoulderX = 85;
+      const shoulderY = 55;
+      const midX = shoulderX + (handX - shoulderX) * 0.5 + armExtend;
+      const midY = shoulderY + (handY - shoulderY) * 0.5;
+      
+      svg.innerHTML = '';
+      
+      svg.appendChild(rc.line(shoulderX, shoulderY, midX, midY, { stroke: '#2c3e50', strokeWidth: 2.5, roughness: 0.5 }));
+      svg.appendChild(rc.line(midX, midY, handX, handY, { stroke: '#2c3e50', strokeWidth: 2.5, roughness: 0.5 }));
+      
+      svg.appendChild(rc.curve([[lanternX - 5, lanternY], [lanternX, lanternY - 6], [lanternX + 5, lanternY]], { stroke: '#2c3e50', strokeWidth: 2, roughness: 0.5 }));
+      svg.appendChild(rc.line(lanternX - 10, lanternY + 2, lanternX + 10, lanternY + 2, { stroke: '#2c3e50', strokeWidth: 2, roughness: 0.5 }));
+      svg.appendChild(rc.rectangle(lanternX - 8, lanternY + 4, 16, 22, { 
+        stroke: '#2c3e50', strokeWidth: 1.5, fill: 'none', roughness: 0.5
+      }));
+      svg.appendChild(rc.circle(lanternX, lanternY + 15, 6, { fill: '#f1c40f', stroke: 'none' }));
+      svg.appendChild(rc.circle(lanternX, lanternY + 15, 9, { stroke: '#f39c12', strokeWidth: 1, fill: 'none', roughness: 0.5 }));
+      svg.appendChild(rc.line(lanternX - 10, lanternY + 26, lanternX + 10, lanternY + 26, { stroke: '#2c3e50', strokeWidth: 2, roughness: 0.5 }));
+      
+      auditAnimationId = requestAnimationFrame(animateAuditLantern);
+    }
+
+    function animateHealthDrops() {
+      const dropsSvg = document.getElementById('health-drops');
+      if (!dropsSvg || typeof rough === 'undefined') return;
+      const dropsRc = rough.svg(dropsSvg);
+      
+      const currentTime = Date.now();
+      
+      // Calculate needle end position
+      const shoulderX = 35, shoulderY = 50;
+      const handX = 22, handY = 38;
+      const dx = handX - shoulderX;
+      const dy = handY - shoulderY;
+      const armAngle = Math.atan2(dy, dx);
+      
+      const rodLen = 5;
+      const bodyStartX = handX + rodLen * Math.cos(armAngle);
+      const bodyStartY = handY + rodLen * Math.sin(armAngle);
+      const bodyLen = 22;
+      const endX = bodyStartX + bodyLen * Math.cos(armAngle);
+      const endY = bodyStartY + bodyLen * Math.sin(armAngle);
+      const needleLen = 5;
+      const needleEndX = endX + needleLen * Math.cos(armAngle);
+      const needleEndY = endY + needleLen * Math.sin(armAngle);
+      
+      if (currentTime - lastDropTime > 500) {
+        drops.push({ x: needleEndX, y: needleEndY });
+        lastDropTime = currentTime;
+      }
+      
+      dropsSvg.innerHTML = '';
+      for (let i = drops.length - 1; i >= 0; i--) {
+        const drop = drops[i];
+        
+        dropsSvg.appendChild(dropsRc.circle(drop.x, drop.y, 3, { 
+          stroke: '#e74c3c', strokeWidth: 1, fill: '#e74c3c', fillStyle: 'solid'
+        }));
+        
+        drop.y += 2;
+        
+        if (drop.y > 100) {
+          drops.splice(i, 1);
+        }
+      }
+      
+      healthAnimationId = requestAnimationFrame(animateHealthDrops);
+    }
+
+    function animateRisksTriangle() {
+      const svg = document.getElementById('risks-animated');
+      if (!svg || typeof rough === 'undefined') return;
+      const rc = rough.svg(svg);
+      
+      const pulseSpeed = 0.003;
+      const pulseAmount = Math.sin(Date.now() * pulseSpeed) * 2;
+      const baseSize = 12;
+      const currentSize = baseSize + pulseAmount;
+      
+      flashCounter++;
+      if (flashCounter >= 10) {
+        flashCounter = 0;
+        flashToggle = !flashToggle;
+      }
+      
+      const triX = 85;
+      const triY = 22;
+      
+      svg.innerHTML = '';
+      
+      svg.appendChild(rc.polygon([
+        [triX, triY - currentSize], 
+        [triX + currentSize + 3, triY + currentSize], 
+        [triX - currentSize - 3, triY + currentSize]
+      ], { 
+        stroke: '#e74c3c', strokeWidth: 3, fill: '#f1c40f'
+      }));
+      
+      if (flashToggle) {
+        svg.appendChild(rc.line(triX, triY - 5, triX, triY + 5, { stroke: '#2c3e50', strokeWidth: 4 }));
+        svg.appendChild(rc.circle(triX, triY + 9, 3, { fill: '#2c3e50', stroke: 'none' }));
+      }
+      
+      risksAnimationId = requestAnimationFrame(animateRisksTriangle);
+    }
+
+    function animateStatusPlug() {
+      const svg = document.getElementById('status-animated');
+      if (!svg || typeof rough === 'undefined') return;
+      const rc = rough.svg(svg);
+      
+      statusHoldCount++;
+      if (statusHoldCount >= 12) {
+        statusHoldCount = 0;
+        statusPoseIndex = (statusPoseIndex + 1) % STATUS_POSES.length;
+      }
+      
+      const pose = STATUS_POSES[statusPoseIndex];
+      const plugOffset = pose.plugX;
+      
+      const basePlugX = 68;
+      const plugX = basePlugX + plugOffset;
+      const handX = plugX;
+      const armX = 55 + (handX - 55) * 0.5;
+      
+      svg.innerHTML = '';
+      
+      const cordStartX = 15;
+      const cordStartY = 92;
+      const cordEndX = plugX;
+      const cordEndY = 60;
+      const midX = (cordStartX + cordEndX) / 2 + plugOffset * 0.3;
+      const midY = (cordStartY + cordEndY) / 2 + 10;
+      
+      svg.appendChild(rc.curve([[cordStartX, cordStartY], [midX, midY], [cordEndX, cordEndY]], { 
+        stroke: '#f1c40f', strokeWidth: 4, roughness: 0.5, bowing: 1
+      }));
+      
+      svg.appendChild(rc.line(55, 50, armX, 58, { stroke: '#2c3e50', strokeWidth: 2.5, roughness: 0.3 }));
+      svg.appendChild(rc.line(armX, 58, handX, 58, { stroke: '#2c3e50', strokeWidth: 2.5, roughness: 0.3 }));
+      
+      svg.appendChild(rc.rectangle(plugX, 50, 28, 20, { 
+        stroke: '#2c3e50', strokeWidth: 2, roughness: 0.5,
+        fill: '#f39c12', fillStyle: 'solid'
+      }));
+      
+      svg.appendChild(rc.rectangle(plugX + 28, 54, 12, 5, { 
+        stroke: '#2c3e50', strokeWidth: 1.5, fill: 'none', roughness: 0.5
+      }));
+      svg.appendChild(rc.rectangle(plugX + 28, 63, 12, 5, { 
+        stroke: '#2c3e50', strokeWidth: 1.5, fill: 'none', roughness: 0.5
+      }));
+      
+      statusAnimationId = requestAnimationFrame(animateStatusPlug);
+    }
+
+    function setupStatCardAnimations() {
+      // Audit Coverage
+      const auditCard = document.getElementById('audit-coverage').closest('.stat-card');
+      auditCard.addEventListener('mouseenter', () => {
+        if (!auditAnimationId) animateAuditLantern();
+      });
+      auditCard.addEventListener('mouseleave', () => {
+        if (auditAnimationId) {
+          cancelAnimationFrame(auditAnimationId);
+          auditAnimationId = null;
+        }
+      });
+      
+      // Network Health
+      const healthCard = document.getElementById('card-health');
+      healthCard.addEventListener('mouseenter', () => {
+        if (!healthAnimationId) {
+          lastDropTime = Date.now();
+          animateHealthDrops();
+        }
+      });
+      healthCard.addEventListener('mouseleave', () => {
+        if (healthAnimationId) {
+          cancelAnimationFrame(healthAnimationId);
+          healthAnimationId = null;
+        }
+      });
+      
+      // Unverified Risks
+      const risksCard = document.getElementById('card-risks');
+      risksCard.addEventListener('mouseenter', () => {
+        if (!risksAnimationId) animateRisksTriangle();
+      });
+      risksCard.addEventListener('mouseleave', () => {
+        if (risksAnimationId) {
+          cancelAnimationFrame(risksAnimationId);
+          risksAnimationId = null;
+        }
+      });
+      
+      // System Status
+      const statusCard = document.getElementById('card-status');
+      statusCard.addEventListener('mouseenter', () => {
+        if (!statusAnimationId) animateStatusPlug();
+      });
+      statusCard.addEventListener('mouseleave', () => {
+        if (statusAnimationId) {
+          cancelAnimationFrame(statusAnimationId);
+          statusAnimationId = null;
+        }
+      });
     }
 
     // Draw modal illustration whenever modal is opened
@@ -1539,6 +1945,12 @@
         // Draw illustration when opening AI modal
         if (modalId === 'aiModal' && newDisplay === 'flex') {
           setTimeout(drawModalIllustration, 10);
+        }
+        
+        // Stop animation when closing AI modal
+        if (modalId === 'aiModal' && newDisplay === 'none' && modalAnimationId) {
+          cancelAnimationFrame(modalAnimationId);
+          modalAnimationId = null;
         }
       }
     }
