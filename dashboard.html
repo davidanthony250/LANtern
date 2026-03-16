@@ -10,6 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Kalam:wght@300;400;700&family=Patrick+Hand&display=swap" rel="stylesheet">
   <link rel="icon" href='data:image/svg+xml;utf8,<svg width="32" height="32" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><g stroke="%232c3e50" stroke-width="5" fill="none"><path d="M50,15 C60,5 70,15 50,15"/><path d="M40,25 C40,15 60,15 60,25"/><path d="M35,25 L65,25 L70,35 L30,35 Z" fill="%23ecf0f1"/><path d="M30,35 L25,75 Q25,85 50,85 Q75,85 75,75 L70,35"/><path d="M25,75 L75,75 L70,85 L30,85 Z" fill="%23ecf0f1"/></g><circle cx="50" cy="60" r="12" fill="%23f1c40f"/></svg>'>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://unpkg.com/roughjs@4.6.6/bundled/rough.js"></script>
   <style>
     :root {
       /* Sketchbook Palette */
@@ -167,6 +168,18 @@
     }
     
     .stat-desc { font-size: 0.9rem; color: #7f8c8d; }
+
+    .stat-illustration {
+      position: absolute;
+      right: 15px;
+      bottom: 55px;
+      width: 100px;
+      height: 80px;
+    }
+
+    .stat-illustration.lower {
+      bottom: 35px;
+    }
 
     /* Marker Bars */
     .risk-indicator { 
@@ -443,21 +456,11 @@
       </div>
       <div style="display: flex; gap: 1.5rem;">
         <button class="settings-btn" onclick="toggleModal('aiModal')">
-          <svg width="18" height="18" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="6" stroke-linecap="round">
-            <ellipse cx="50.3" cy="50.2" rx="18" ry="17"/>
-            <path d="M50,32 L50,12"/>
-            <path d="M50,68 L50.5,88"/>
-            <path d="M35.5,40 L23,31"/>
-            <path d="M76.5,68 L64.2,60.5"/>
-            <path d="M35.5,60 L23.5,68"/>
-            <path d="M76.5,32 L64.5,40"/>
-            <path d="M32,50 L12,50"/>
-            <path d="M68,50 L88.5,50"/>
-          </svg>
-          AI Settings
+          <svg id="ai-icon" width="20" height="20" style="position: relative; top: 6px;"></svg>
+          <span style="margin-left: 6px;">AI Settings</span>
         </button>
         <button class="settings-btn" style="color: var(--danger-color); text-decoration-color: var(--danger-color);" onclick="logout()">
-          <svg width="18" height="18" viewBox="0 0 100 100">
+          <svg width="18" height="18" viewBox="0 0 100 100" style="position: relative; top: 4px;">
             <path d="M32,48 L32,32 Q32,16 50,16 Q68,16 68,32 L68,48" stroke="#2c3e50" stroke-width="7" fill="none" stroke-linecap="round"/>
             <path d="M18,48 L82,48 L88,52 L88,88 L82,93 L18,93 L12,88 L12,52 Z" fill="#f1c40f"/>
             <path d="M21,50 L79,50 L85,54 L85,86 L79,90 L21,90 L15,86 L15,54 Z" stroke="#2c3e50" stroke-width="5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -478,6 +481,7 @@
             <div class="risk-indicator">
                 <div id="bar-coverage" class="risk-fill" style="width: 0%; background-color: var(--primary-color);"></div>
             </div>
+            <svg id="audit-coverage" class="stat-illustration" viewBox="0 0 120 100"></svg>
         </div>
         <div class="stat-card">
             <div class="stat-label">Network Health</div>
@@ -486,17 +490,19 @@
             <div class="risk-indicator">
                 <div id="bar-health" class="risk-fill" style="width: 100%; background-color: var(--success-color);"></div>
             </div>
+            <svg id="network-health" class="stat-illustration" viewBox="0 0 120 100"></svg>
         </div>
         <div class="stat-card">
             <div class="stat-label">Unverified Risks</div>
             <div class="stat-value" id="stat-risks" style="color: var(--danger-color);">0</div>
             <div class="stat-desc">Require Attention</div>
-            <div style="font-size: 3rem; position: absolute; right: 20px; bottom: 10px; opacity: 0.1;">⚠</div>
+            <svg id="unverified-risks" class="stat-illustration lower" viewBox="0 0 120 100"></svg>
         </div>
         <div class="stat-card">
             <div class="stat-label">System Status</div>
             <div class="stat-value" id="ai-status-val" style="font-size: 1.5rem; color: var(--danger-color);">● Offline</div>
             <div class="stat-desc" id="ai-status-desc">AI Engine Disconnected</div>
+            <svg id="system-status" class="stat-illustration lower" viewBox="0 0 120 100"></svg>
         </div>
     </div>
 
@@ -524,7 +530,10 @@
   <div class="modal" id="aiModal">
     <div class="modal-content">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
-        <h2 style="font-weight: 800; font-size: 1.8rem;">AI Settings</h2>
+        <div style="display: flex; align-items: center; gap: 1rem;">
+          <h2 style="font-weight: 800; font-size: 1.8rem; margin: 0;">AI Settings</h2>
+          <svg id="ai-modal-illustration" width="120" height="40" viewBox="0 0 350 100" style="display: block;"></svg>
+        </div>
         <button onclick="toggleModal('aiModal')" style="background:none; border:none; cursor:pointer; font-size: 2rem; color: var(--text-color); font-family: 'Patrick Hand', cursive;">&times;</button>
       </div>
       <div style="margin-bottom: 1.5rem;">
@@ -612,14 +621,6 @@
     window.showAuth = function(show) {
         document.getElementById('auth-overlay').style.display = show ? 'flex' : 'none';
         document.getElementById('main-container').style.display = show ? 'none' : 'block';
-    }
-
-    window.toggleModal = function(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            const current = window.getComputedStyle(modal).display;
-            modal.style.display = current === 'none' ? 'flex' : 'none';
-        }
     }
 
     window.handleAuth = async function() {
@@ -1172,6 +1173,375 @@
         a.href = url; a.download = 'sentinel_network_report.csv'; a.click();
     }
     console.log("LANtern Script Initialization Complete");
+
+    // Draw AI Settings Robot Icon
+    function drawAIIcon() {
+      const svg = document.getElementById('ai-icon');
+      if (!svg || typeof rough === 'undefined') return;
+      const rc = rough.svg(svg);
+      
+      // Robot head with blue fill
+      svg.appendChild(rc.rectangle(2, 2, 16, 16, { 
+        stroke: '#2c3e50', strokeWidth: 1.5, roughness: 1.5, 
+        fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5 
+      }));
+      
+      // Eyes
+      svg.appendChild(rc.circle(6, 8, 3.5, { stroke: '#2c3e50', strokeWidth: 1.2, roughness: 1, fill: 'white' }));
+      svg.appendChild(rc.circle(14, 8, 3.5, { stroke: '#2c3e50', strokeWidth: 1.2, roughness: 1, fill: 'white' }));
+      
+      // Pupils
+      svg.appendChild(rc.circle(6, 8, 1.2, { fill: '#2c3e50', stroke: 'none' }));
+      svg.appendChild(rc.circle(14, 8, 1.2, { fill: '#2c3e50', stroke: 'none' }));
+      
+      // Antenna
+      svg.appendChild(rc.line(10, 2, 10, -2, { stroke: '#2c3e50', strokeWidth: 1.5, roughness: 1.5 }));
+      svg.appendChild(rc.circle(10, -3, 2.5, { stroke: '#2c3e50', strokeWidth: 1.2, roughness: 1.5, fill: '#e74c3c' }));
+      
+      // Mouth
+      svg.appendChild(rc.line(6, 14, 14, 14, { stroke: '#2c3e50', strokeWidth: 1.5, roughness: 1.5 }));
+    }
+    
+    // Draw icon after DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        drawAIIcon();
+        drawStatCardIllustrations();
+      });
+    } else {
+      drawAIIcon();
+      drawStatCardIllustrations();
+    }
+
+    // Draw AI Settings Modal Illustration - Robot on Assembly Line
+    function drawModalIllustration() {
+      const svg = document.getElementById('ai-modal-illustration');
+      if (!svg || typeof rough === 'undefined') return;
+      
+      // Clear previous drawing
+      svg.innerHTML = '';
+      
+      const rc = rough.svg(svg);
+      
+      // Conveyor belt
+      svg.appendChild(rc.line(20, 85, 330, 85, { stroke: '#2c3e50', strokeWidth: 3, roughness: 2 }));
+      
+      // Belt rollers
+      for (let i = 40; i < 320; i += 40) {
+        svg.appendChild(rc.circle(i, 92, 10, { stroke: '#7f8c8d', strokeWidth: 2, roughness: 1.5, fill: '#95a5a6' }));
+      }
+      
+      // Main robot on belt (centered)
+      const robotX = 175;
+      // Body
+      svg.appendChild(rc.rectangle(robotX - 25, 35, 50, 45, { 
+        stroke: '#2c3e50', strokeWidth: 2.5, roughness: 1.8,
+        fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
+      }));
+      
+      // Head
+      svg.appendChild(rc.rectangle(robotX - 20, 10, 40, 25, { 
+        stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
+        fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
+      }));
+      
+      // Eyes
+      svg.appendChild(rc.circle(robotX - 10, 22, 8, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
+      svg.appendChild(rc.circle(robotX + 10, 22, 8, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
+      svg.appendChild(rc.circle(robotX - 10, 22, 3, { fill: '#2c3e50', stroke: 'none' }));
+      svg.appendChild(rc.circle(robotX + 10, 22, 3, { fill: '#2c3e50', stroke: 'none' }));
+      
+      // Antenna
+      svg.appendChild(rc.line(robotX, 10, robotX, 0, { stroke: '#2c3e50', strokeWidth: 2 }));
+      svg.appendChild(rc.circle(robotX, -3, 6, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#e74c3c' }));
+      
+      // Arms holding boxes
+      svg.appendChild(rc.line(robotX - 25, 50, robotX - 40, 65, { stroke: '#2c3e50', strokeWidth: 3 }));
+      svg.appendChild(rc.line(robotX + 25, 50, robotX + 40, 65, { stroke: '#2c3e50', strokeWidth: 3 }));
+      
+      // Boxes on belt
+      svg.appendChild(rc.rectangle(robotX - 55, 60, 15, 15, { stroke: '#f39c12', strokeWidth: 2, fill: '#f1c40f' }));
+      svg.appendChild(rc.rectangle(robotX + 40, 60, 15, 15, { stroke: '#f39c12', strokeWidth: 2, fill: '#f1c40f' }));
+      
+      // More boxes on belt
+      svg.appendChild(rc.rectangle(80, 65, 20, 20, { stroke: '#27ae60', strokeWidth: 2, fill: '#2ecc71' }));
+      svg.appendChild(rc.rectangle(250, 65, 20, 20, { stroke: '#8e44ad', strokeWidth: 2, fill: '#9b59b6' }));
+      
+      // Background gears
+      svg.appendChild(rc.circle(50, 30, 25, { stroke: '#bdc3c7', strokeWidth: 2, fill: 'none' }));
+      svg.appendChild(rc.circle(300, 30, 25, { stroke: '#bdc3c7', strokeWidth: 2, fill: 'none' }));
+    }
+
+    // Draw Stat Card Illustrations
+    function drawStatCardIllustrations() {
+      // Audit Coverage - Robot holding lantern
+      const auditSvg = document.getElementById('audit-coverage');
+      if (auditSvg && typeof rough !== 'undefined') {
+        const rc = rough.svg(auditSvg);
+        
+        // Robot body
+        auditSvg.appendChild(rc.rectangle(35, 40, 50, 55, { 
+          stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
+          fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
+        }));
+        
+        // Robot head
+        auditSvg.appendChild(rc.rectangle(40, 15, 40, 28, { 
+          stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
+          fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
+        }));
+        
+        // Eyes
+        auditSvg.appendChild(rc.circle(52, 28, 7, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
+        auditSvg.appendChild(rc.circle(68, 28, 7, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
+        auditSvg.appendChild(rc.circle(52, 28, 3, { fill: '#2c3e50', stroke: 'none' }));
+        auditSvg.appendChild(rc.circle(68, 28, 3, { fill: '#2c3e50', stroke: 'none' }));
+        
+        // Antenna
+        auditSvg.appendChild(rc.line(60, 15, 60, 5, { stroke: '#2c3e50', strokeWidth: 2 }));
+        auditSvg.appendChild(rc.circle(60, 2, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#f1c40f' }));
+        
+        // Lantern
+        const lanternX = 110;
+        const lanternY = 35;
+        
+        // Handle (triangle at top)
+        auditSvg.appendChild(rc.curve([[lanternX - 5, lanternY], [lanternX, lanternY - 6], [lanternX + 5, lanternY]], { stroke: '#2c3e50', strokeWidth: 2 }));
+        auditSvg.appendChild(rc.line(lanternX - 10, lanternY + 2, lanternX + 10, lanternY + 2, { stroke: '#2c3e50', strokeWidth: 2 }));
+        auditSvg.appendChild(rc.rectangle(lanternX - 8, lanternY + 4, 16, 22, { 
+          stroke: '#2c3e50', strokeWidth: 1.5, fill: 'none'
+        }));
+        auditSvg.appendChild(rc.circle(lanternX, lanternY + 15, 6, { fill: '#f1c40f', stroke: 'none' }));
+        auditSvg.appendChild(rc.circle(lanternX, lanternY + 15, 9, { stroke: '#f39c12', strokeWidth: 1, fill: 'none' }));
+        auditSvg.appendChild(rc.line(lanternX - 10, lanternY + 26, lanternX + 10, lanternY + 26, { stroke: '#2c3e50', strokeWidth: 2 }));
+        
+        // Robot hand touching the handle
+        auditSvg.appendChild(rc.line(85, 55, lanternX, lanternY - 6, { stroke: '#2c3e50', strokeWidth: 2.5 }));
+      }
+
+      // Network Health - Medic Robot with syringe
+      const healthSvg = document.getElementById('network-health');
+      if (healthSvg && typeof rough !== 'undefined') {
+        const rc = rough.svg(healthSvg);
+        
+        // Robot body
+        healthSvg.appendChild(rc.rectangle(35, 45, 50, 50, { 
+          stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
+          fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
+        }));
+        
+        // White medic cross on body
+        healthSvg.appendChild(rc.line(55, 67, 65, 67, { stroke: 'white', strokeWidth: 4 }));
+        healthSvg.appendChild(rc.line(60, 62, 60, 72, { stroke: 'white', strokeWidth: 4 }));
+        
+        // Robot head
+        healthSvg.appendChild(rc.rectangle(40, 10, 40, 30, { 
+          stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
+          fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
+        }));
+        
+        // Eyes
+        healthSvg.appendChild(rc.circle(52, 25, 7, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#2ecc71' }));
+        healthSvg.appendChild(rc.circle(68, 25, 7, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#2ecc71' }));
+        
+        // Medic cap on forehead
+        healthSvg.appendChild(rc.rectangle(38, 13, 44, 10, { 
+          stroke: '#2c3e50', strokeWidth: 2, fill: 'white', fillStyle: 'solid'
+        }));
+        healthSvg.appendChild(rc.line(55, 16, 65, 16, { stroke: '#e74c3c', strokeWidth: 3 }));
+        healthSvg.appendChild(rc.line(60, 11, 60, 21, { stroke: '#e74c3c', strokeWidth: 3 }));
+        
+        // Arm going up at angle to hold syringe
+        const shoulderX = 35, shoulderY = 50;
+        const handX = 22, handY = 38;
+        healthSvg.appendChild(rc.line(shoulderX, shoulderY, handX, handY, { stroke: '#2c3e50', strokeWidth: 3 }));
+        
+        // Calculate arm angle
+        const dx = handX - shoulderX;
+        const dy = handY - shoulderY;
+        const armAngle = Math.atan2(dy, dx);
+        const cos = Math.cos(armAngle);
+        const sin = Math.sin(armAngle);
+        
+        // Perpendicular for T-handle
+        const perpCos = -sin;
+        const perpSin = cos;
+        
+        // T-handle (perpendicular to arm) at hand position
+        const tLength = 7;
+        healthSvg.appendChild(rc.line(
+          handX - tLength * perpCos, handY - tLength * perpSin,
+          handX + tLength * perpCos, handY + tLength * perpSin,
+          { stroke: '#2c3e50', strokeWidth: 3 }
+        ));
+        
+        // Plunger rod extending along arm angle
+        const rodLen = 5;
+        const bodyStartX = handX + rodLen * cos;
+        const bodyStartY = handY + rodLen * sin;
+        healthSvg.appendChild(rc.line(handX, handY, bodyStartX, bodyStartY, { stroke: '#2c3e50', strokeWidth: 2 }));
+        
+        // Syringe body - extending along same angle as arm
+        const bodyLen = 22;
+        const bodyWidth = 5;
+        const endX = bodyStartX + bodyLen * cos;
+        const endY = bodyStartY + bodyLen * sin;
+        
+        // Draw body as rectangle using perpendicular offset
+        healthSvg.appendChild(rc.line(bodyStartX - bodyWidth * perpCos, bodyStartY - bodyWidth * perpSin,
+                                bodyStartX + bodyWidth * perpCos, bodyStartY + bodyWidth * perpSin,
+                                { stroke: '#2c3e50', strokeWidth: 2 }));
+        healthSvg.appendChild(rc.line(bodyStartX + bodyWidth * perpCos, bodyStartY + bodyWidth * perpSin,
+                                endX + bodyWidth * perpCos, endY + bodyWidth * perpSin,
+                                { stroke: '#2c3e50', strokeWidth: 2 }));
+        healthSvg.appendChild(rc.line(endX + bodyWidth * perpCos, endY + bodyWidth * perpSin,
+                                endX - bodyWidth * perpCos, endY - bodyWidth * perpSin,
+                                { stroke: '#2c3e50', strokeWidth: 2 }));
+        healthSvg.appendChild(rc.line(endX - bodyWidth * perpCos, endY - bodyWidth * perpSin,
+                                bodyStartX - bodyWidth * perpCos, bodyStartY - bodyWidth * perpSin,
+                                { stroke: '#2c3e50', strokeWidth: 2 }));
+        
+        // Red liquid inside
+        const liquidLen = 16;
+        const liquidEndX = bodyStartX + liquidLen * cos;
+        const liquidEndY = bodyStartY + liquidLen * sin;
+        const liquidWidth = 3;
+        
+        const liquidPoints = [
+          [bodyStartX - liquidWidth * perpCos, bodyStartY - liquidWidth * perpSin],
+          [bodyStartX + liquidWidth * perpCos, bodyStartY + liquidWidth * perpSin],
+          [liquidEndX + liquidWidth * perpCos, liquidEndY + liquidWidth * perpSin],
+          [liquidEndX - liquidWidth * perpCos, liquidEndY - liquidWidth * perpSin]
+        ];
+        healthSvg.appendChild(rc.polygon(liquidPoints, { stroke: 'none', fill: '#e74c3c', fillStyle: 'solid' }));
+        
+        // Needle at end
+        const needleLen = 5;
+        const needleEndX = endX + needleLen * cos;
+        const needleEndY = endY + needleLen * sin;
+        healthSvg.appendChild(rc.line(endX, endY, needleEndX, needleEndY, { stroke: '#2c3e50', strokeWidth: 2 }));
+      }
+
+      // Unverified Risks - Robot with clipboard and warning triangle diagonal
+      const risksSvg = document.getElementById('unverified-risks');
+      if (risksSvg && typeof rough !== 'undefined') {
+        const rc = rough.svg(risksSvg);
+        
+        // Robot body
+        risksSvg.appendChild(rc.rectangle(10, 45, 40, 45, { 
+          stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
+          fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
+        }));
+        
+        // Robot head
+        risksSvg.appendChild(rc.rectangle(13, 20, 34, 26, { 
+          stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
+          fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
+        }));
+        
+        // V-shaped TV antenna on head
+        const headCenterX = 30;
+        const headTopY = 20;
+        risksSvg.appendChild(rc.line(headCenterX, headTopY, headCenterX - 10, headTopY - 12, { stroke: '#2c3e50', strokeWidth: 2 }));
+        risksSvg.appendChild(rc.line(headCenterX, headTopY, headCenterX + 10, headTopY - 12, { stroke: '#2c3e50', strokeWidth: 2 }));
+        
+        // Eyes - concerned look
+        risksSvg.appendChild(rc.circle(22, 32, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
+        risksSvg.appendChild(rc.circle(38, 32, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: 'white' }));
+        risksSvg.appendChild(rc.circle(22, 32, 2, { fill: '#2c3e50', stroke: 'none' }));
+        risksSvg.appendChild(rc.circle(38, 32, 2, { fill: '#2c3e50', stroke: 'none' }));
+        
+        // Eyebrows - worried
+        risksSvg.appendChild(rc.line(18, 25, 26, 27, { stroke: '#2c3e50', strokeWidth: 2 }));
+        risksSvg.appendChild(rc.line(34, 27, 42, 25, { stroke: '#2c3e50', strokeWidth: 2 }));
+        
+        // Clipboard
+        risksSvg.appendChild(rc.rectangle(55, 50, 30, 40, { 
+          stroke: '#2c3e50', strokeWidth: 2, fill: 'white', fillStyle: 'solid'
+        }));
+        risksSvg.appendChild(rc.rectangle(62, 45, 16, 8, { 
+          stroke: '#2c3e50', strokeWidth: 2, fill: '#95a5a6'
+        }));
+        risksSvg.appendChild(rc.line(60, 60, 80, 60, { stroke: '#bdc3c7', strokeWidth: 1.5 }));
+        risksSvg.appendChild(rc.line(60, 70, 80, 70, { stroke: '#bdc3c7', strokeWidth: 1.5 }));
+        risksSvg.appendChild(rc.line(60, 80, 75, 80, { stroke: '#bdc3c7', strokeWidth: 1.5 }));
+        
+        // Warning triangle - diagonal above and to the right, no bubble
+        const triX = 85;
+        const triY = 15;
+        risksSvg.appendChild(rc.polygon([
+          [triX, triY - 12], [triX + 18, triY + 18], [triX - 18, triY + 18]
+        ], { 
+          stroke: '#e74c3c', strokeWidth: 3, fill: '#f1c40f'
+        }));
+        // Exclamation mark inside triangle
+        risksSvg.appendChild(rc.line(triX, triY - 2, triX, triY + 10, { stroke: '#2c3e50', strokeWidth: 4 }));
+        risksSvg.appendChild(rc.circle(triX, triY + 14, 3, { fill: '#2c3e50', stroke: 'none' }));
+      }
+
+      // System Status - Robot holding power plug
+      const statusSvg = document.getElementById('system-status');
+      if (statusSvg && typeof rough !== 'undefined') {
+        const rc = rough.svg(statusSvg);
+        
+        // Robot body
+        statusSvg.appendChild(rc.rectangle(15, 35, 40, 50, { 
+          stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
+          fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
+        }));
+        
+        // Robot head
+        statusSvg.appendChild(rc.rectangle(20, 12, 30, 25, { 
+          stroke: '#2c3e50', strokeWidth: 2, roughness: 1.8,
+          fill: '#5dade2', fillStyle: 'hachure', fillWeight: 1.5
+        }));
+        
+        // Eyes - focused
+        statusSvg.appendChild(rc.circle(28, 24, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#3498db' }));
+        statusSvg.appendChild(rc.circle(42, 24, 5, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#3498db' }));
+        
+        // Antenna
+        statusSvg.appendChild(rc.line(35, 12, 35, 3, { stroke: '#2c3e50', strokeWidth: 2 }));
+        statusSvg.appendChild(rc.circle(35, 0, 4, { stroke: '#2c3e50', strokeWidth: 1.5, fill: '#2ecc71' }));
+        
+        // Arm holding plug
+        statusSvg.appendChild(rc.line(55, 50, 70, 58, { stroke: '#2c3e50', strokeWidth: 2.5 }));
+        
+        // Power plug body - wider than tall
+        statusSvg.appendChild(rc.rectangle(68, 50, 28, 20, { 
+          stroke: '#2c3e50', strokeWidth: 2, roughness: 1.5,
+          fill: '#f39c12', fillStyle: 'solid'
+        }));
+        
+        // Two horizontal prongs extending from the right side of plug body
+        statusSvg.appendChild(rc.rectangle(96, 54, 12, 5, { 
+          stroke: '#2c3e50', strokeWidth: 1.5, fill: 'none'
+        }));
+        statusSvg.appendChild(rc.rectangle(96, 63, 12, 5, { 
+          stroke: '#2c3e50', strokeWidth: 1.5, fill: 'none'
+        }));
+        
+        // Single yellow cord
+        statusSvg.appendChild(rc.line(68, 60, 15, 92, { 
+          stroke: '#f1c40f', strokeWidth: 4, roughness: 1.5, bowing: 2
+        }));
+      }
+    }
+
+    // Draw modal illustration whenever modal is opened
+    window.toggleModal = function(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        const current = window.getComputedStyle(modal).display;
+        const newDisplay = current === 'none' ? 'flex' : 'none';
+        modal.style.display = newDisplay;
+        
+        // Draw illustration when opening AI modal
+        if (modalId === 'aiModal' && newDisplay === 'flex') {
+          setTimeout(drawModalIllustration, 10);
+        }
+      }
+    }
   </script>
 </body>
 </html>
